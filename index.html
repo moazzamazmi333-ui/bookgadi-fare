@@ -203,16 +203,48 @@ function handleToggle(type) {
 
 function useMyLocation(){
   if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(pos=>{
-      const latlng={lat:pos.coords.latitude,lng:pos.coords.longitude};
-      geocoder.geocode({location:latlng},res=>{
-        if(res[0]){ 
-            document.getElementById("pickup").value=res[0].formatted_address; 
-            pickupPlace=res[0]; 
-            map.setCenter(latlng);
+    // High Accuracy enable ki gayi hai taaki GPS ka sahi use ho
+    const options = {
+      enableHighAccuracy: true,
+      timeout: 5000,
+      maximumAge: 0
+    };
+
+    navigator.geolocation.getCurrentPosition(pos => {
+      const latlng = { 
+        lat: pos.coords.latitude, 
+        lng: pos.coords.longitude 
+      };
+      
+      // Map ko turant current location par shift karein
+      map.setCenter(latlng);
+      map.setZoom(16);
+
+      // Address nikalne ke liye geocoder ka use
+      geocoder.geocode({ location: latlng }, (results, status) => {
+        if (status === "OK") {
+          if (results[0]) {
+            const address = results[0].formatted_address;
+            document.getElementById("pickup").value = address;
+            
+            // PickupPlace object ko update karein taaki calculations sahi hon
+            pickupPlace = {
+              formatted_address: address,
+              geometry: { location: new google.maps.LatLng(latlng.lat, latlng.lng) },
+              address_components: results[0].address_components
+            };
+          } else {
+            alert("No address found for this location.");
+          }
+        } else {
+          alert("Geocoder failed due to: " + status);
         }
       });
-    });
+    }, error => {
+      alert("Error: " + error.message + ". Please check if Location is ON.");
+    }, options);
+  } else {
+    alert("Your browser does not support geolocation.");
   }
 }
 
