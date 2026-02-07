@@ -3,18 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BookGadi - Taxi Fare Calculator</title>
+<title>BookGadi - Accurate Fare</title>
 
 <style>
-:root {
-  --primary: #1a73e8;
-  --secondary: #202124;
-  --success: #25D366;
-  --bg: #f8f9fa;
-  --card-bg: #ffffff;
-}
-
-*{box-sizing:border-box;margin:0;padding:0;font-family: 'Segoe UI', Roboto, sans-serif;}
+:root { --primary: #1a73e8; --success: #25D366; --bg: #f8f9fa; }
+*{box-sizing:border-box;margin:0;padding:0;font-family: 'Segoe UI', sans-serif;}
 
 body{
   background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
@@ -22,107 +15,67 @@ body{
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 15px;
 }
 
 .card{
   width: 100%;
   max-width: 450px;
-  background: var(--card-bg);
-  border-radius: 24px;
+  background: #fff;
+  border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  box-shadow: 0 15px 50px rgba(0,0,0,0.3);
 }
 
-#map{height:220px; width:100%; border-bottom: 4px solid var(--primary);}
+#map{height:250px; width:100%; background:#eee;}
 
-.content{padding: 25px;}
-
-h2 { font-size: 20px; margin-bottom: 15px; color: var(--secondary); text-align: center; }
-
-.input-group { position: relative; margin-bottom: 15px; }
+.content{padding: 20px;}
+.input-group { margin-bottom: 15px; }
 
 input, select {
   width: 100%;
-  padding: 14px 15px;
+  padding: 12px;
   font-size: 15px;
-  border-radius: 12px;
-  border: 2px solid #eee;
+  border-radius: 10px;
+  border: 1px solid #ddd;
   outline: none;
 }
 
-input:focus, select:focus { border-color: var(--primary); }
-
 .btn-location {
-  background: none;
+  background: #f1f3f4;
   color: var(--primary);
-  border: none;
+  border: 1px solid #ddd;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  padding: 5px 0;
-  display: flex;
-  align-items: center;
-  gap: 5px;
+  padding: 8px;
+  width: 100%;
+  border-radius: 8px;
+  margin-top: 5px;
 }
 
-button {
+button.main-btn {
   width: 100%;
-  padding: 15px;
-  margin-top: 15px;
+  padding: 14px;
+  margin-top: 10px;
   font-size: 16px;
   font-weight: bold;
-  border-radius: 12px;
+  border-radius: 10px;
   border: none;
   cursor: pointer;
 }
 
 .btn-primary { background: var(--primary); color: #fff; }
-.btn-whatsapp { background: var(--success); color: #fff; }
+.btn-whatsapp { background: var(--success); color: #fff; display:none; }
 
-.row {
-  display: flex;
-  background: #f1f3f4;
-  padding: 5px;
-  border-radius: 12px;
-  margin-top: 15px;
-  gap: 5px;
-}
+.row { display: flex; background: #f8f9fa; padding: 5px; border-radius: 10px; margin-top: 10px; gap: 5px; display:none; }
+.row label { flex: 1; text-align: center; padding: 8px; cursor: pointer; border-radius: 6px; font-size: 14px; }
+.row input { display: none; }
+.row label:has(input:checked) { background: #fff; color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
 
-.row label {
-  flex: 1;
-  text-align: center;
-  padding: 10px;
-  cursor: pointer;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.row input[type="checkbox"] { display: none; }
-.row label:has(input:checked) { background: #fff; color: var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-
-#tripOptions, #userForm, #waBtn { display: none; }
-
-.result-box {
-  margin-top: 20px;
-  padding: 15px;
-  background: #f8f9fa;
-  border-radius: 12px;
-  border-left: 5px solid var(--primary);
-  line-height: 1.8;
-}
-
-.badge {
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 11px;
-  text-transform: uppercase;
-  margin-bottom: 8px;
-  display: inline-block;
-}
-.local { background: #e6f4ea; color: #1e8e3e; }
-.outstation { background: #feefe3; color: #d93025; }
+#result { margin-top: 15px; }
+.res-box { padding: 12px; background: #f0f4f8; border-radius: 10px; border-left: 4px solid var(--primary); font-size: 14px; line-height: 1.6; }
+#userForm { display:none; margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px; }
 </style>
 </head>
 
@@ -132,45 +85,42 @@ button {
   <div id="map"></div>
 
   <div class="content">
-    <h2>Taxi Fare Calculator</h2>
-    
     <div class="input-group">
-      <input id="pickup" placeholder="Pickup Location">
-      <button class="btn-location" onclick="useMyLocation()">📍 Use My Location</button>
+      <input id="pickup" placeholder="Pickup Location (Wait for suggestions)">
+      <button class="btn-location" id="locBtn" onclick="useMyLocation()">📍 Click to Get My Location</button>
     </div>
 
     <div class="input-group">
-      <input id="drop" placeholder="Drop Location">
+      <input id="drop" placeholder="Where to? (Drop Location)">
     </div>
 
     <select id="vehicle">
-      <option value="11" selected>🚗 Hatchback (₹11/km)</option>
+      <option value="11">🚗 Hatchback (₹11/km)</option>
       <option value="10">🚕 Sedan (₹10/km)</option>
       <option value="12">🚙 SUV (₹12/km)</option>
     </select>
 
     <div id="tripOptions" class="row">
-      <label><input type="checkbox" id="oneway" checked onchange="handleToggle('oneway')"> One Way</label>
-      <label><input type="checkbox" id="roundtrip" onchange="handleToggle('roundtrip')"> Round Trip</label>
+      <label><input type="checkbox" id="oneway" checked onchange="toggleTrip('oneway')"> One Way</label>
+      <label><input type="checkbox" id="roundtrip" onchange="toggleTrip('roundtrip')"> Round Trip</label>
     </div>
 
-    <button class="btn-primary" onclick="calculateFare()">Check Price</button>
+    <button class="main-btn btn-primary" onclick="calculateFare()">Get Fare & Route</button>
 
     <div id="result"></div>
 
-    <button id="waBtn" class="btn-whatsapp" onclick="openUserForm()">💬 Book on WhatsApp</button>
+    <button id="waBtn" class="main-btn btn-whatsapp" onclick="document.getElementById('userForm').style.display='block'">💬 Book on WhatsApp</button>
 
     <div id="userForm">
-      <input id="custName" placeholder="Your Name" style="margin-top:10px">
-      <input id="custPhone" type="tel" placeholder="Mobile Number" style="margin-top:10px">
-      <button class="btn-whatsapp" onclick="sendWhatsApp()">Send to WhatsApp</button>
+      <input id="custName" placeholder="Your Name" style="margin-bottom:8px">
+      <input id="custPhone" type="tel" placeholder="WhatsApp Number">
+      <button class="main-btn btn-whatsapp" style="display:block" onclick="sendWhatsApp()">Confirm Booking</button>
     </div>
   </div>
 </div>
 
 <script>
-let map, geocoder, pickupAC, dropAC, pickupPlace, dropPlace;
-let directionsService, directionsRenderer;
+let map, geocoder, pickupAC, dropAC, pickupPlace, dropPlace, directionsRenderer, directionsService;
 let lastKm = 0;
 
 function initMap(){
@@ -181,11 +131,8 @@ function initMap(){
   });
 
   map = new google.maps.Map(document.getElementById("map"),{
-    center:{lat:26.0739,lng:83.1859}, 
-    zoom:12,
-    disableDefaultUI: true
+    center:{lat:26.0739,lng:83.1859}, zoom:12, disableDefaultUI: true
   });
-
   directionsRenderer.setMap(map);
 
   pickupAC = new google.maps.places.Autocomplete(document.getElementById("pickup"),{componentRestrictions:{country:"in"}});
@@ -195,131 +142,108 @@ function initMap(){
   dropAC.addListener("place_changed",()=>dropPlace=dropAC.getPlace());
 }
 
-function handleToggle(type) {
-    if(type === 'oneway') document.getElementById('roundtrip').checked = false;
-    else document.getElementById('oneway').checked = false;
+function useMyLocation() {
+  const btn = document.getElementById("locBtn");
+  btn.innerText = "📍 Sahi location dhoondh rahe hain...";
+
+  const geoOptions = {
+    enableHighAccuracy: true, // GPS ka use karega
+    timeout: 15000,           // 15 seconds tak wait karega signal ke liye
+    maximumAge: 0             // Purani (cached) location nahi lega
+  };
+
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const accuracy = pos.coords.accuracy; // Accuracy meter mein
+
+        console.log("Accuracy: " + accuracy + " meters");
+
+        const latlng = { lat: lat, lng: lng };
+
+        geocoder.geocode({ location: latlng }, (results, status) => {
+          if (status === "OK" && results[0]) {
+            // Hum "results[0]" ki jagah "street_address" dhoondhenge jo zyada sahi hota hai
+            let bestResult = results.find(r => r.types.includes('street_address')) || results[0];
+            
+            document.getElementById("pickup").value = bestResult.formatted_address;
+            pickupPlace = bestResult;
+            
+            map.setCenter(latlng);
+            map.setZoom(17); // Zyada zoom taaki gali saaf dikhe
+            
+            // Marker lagayein taaki user ko dikhe kahan ki location li hai
+            new google.maps.Marker({
+              position: latlng,
+              map: map,
+              title: "Aap Yahan Hain"
+            });
+
+            btn.innerText = "✅ Sahi Location Mil Gayi";
+          }
+        });
+      },
+      (err) => {
+        if(err.code == 1) alert("Please location permission allow karein.");
+        else if(err.code == 3) alert("Signal weak hai, koshish jaari hai...");
+        btn.innerText = "📍 Phir se koshish karein";
+      },
+      geoOptions
+    );
+  }
+}
+
+function toggleTrip(type) {
+    document.getElementById('roundtrip').checked = (type === 'roundtrip');
+    document.getElementById('oneway').checked = (type === 'oneway');
     if(pickupPlace && dropPlace) calculateFare();
 }
 
-function useMyLocation(){
-  if (navigator.geolocation) {
-    // High Accuracy enable ki gayi hai taaki GPS ka sahi use ho
-    const options = {
-      enableHighAccuracy: true,
-      timeout: 5000,
-      maximumAge: 0
-    };
-
-    navigator.geolocation.getCurrentPosition(pos => {
-      const latlng = { 
-        lat: pos.coords.latitude, 
-        lng: pos.coords.longitude 
-      };
-      
-      // Map ko turant current location par shift karein
-      map.setCenter(latlng);
-      map.setZoom(16);
-
-      // Address nikalne ke liye geocoder ka use
-      geocoder.geocode({ location: latlng }, (results, status) => {
-        if (status === "OK") {
-          if (results[0]) {
-            const address = results[0].formatted_address;
-            document.getElementById("pickup").value = address;
-            
-            // PickupPlace object ko update karein taaki calculations sahi hon
-            pickupPlace = {
-              formatted_address: address,
-              geometry: { location: new google.maps.LatLng(latlng.lat, latlng.lng) },
-              address_components: results[0].address_components
-            };
-          } else {
-            alert("No address found for this location.");
-          }
-        } else {
-          alert("Geocoder failed due to: " + status);
-        }
-      });
-    }, error => {
-      alert("Error: " + error.message + ". Please check if Location is ON.");
-    }, options);
-  } else {
-    alert("Your browser does not support geolocation.");
-  }
-}
-
-function getCity(place){
-  let city="";
-  if(!place || !place.address_components) return "";
-  place.address_components.forEach(c=>{
-    if(c.types.includes("locality")) city=c.long_name.toLowerCase();
-  });
-  return city;
-}
-
 function calculateFare(){
-  if(!pickupPlace || !dropPlace){
-    alert("Please select locations from suggestions");
-    return;
-  }
+  if(!pickupPlace || !dropPlace){ alert("Please select locations"); return; }
 
-  // Draw Blue Line on Map
   directionsService.route({
-    origin: pickupPlace.formatted_address,
-    destination: dropPlace.formatted_address,
+    origin: pickupPlace.formatted_address || pickupPlace.geometry.location,
+    destination: dropPlace.formatted_address || dropPlace.geometry.location,
     travelMode: 'DRIVING'
-  }, (response, status) => {
+  }, (res, status) => {
     if (status === 'OK') {
-      directionsRenderer.setDirections(response);
-      lastKm = response.routes[0].legs[0].distance.value / 1000;
-      displayResults();
+      directionsRenderer.setDirections(res);
+      lastKm = res.routes[0].legs[0].distance.value / 1000;
+      showFare();
     } else {
-      alert("Could not calculate route");
+      alert("Route calculation failed.");
     }
   });
 }
 
-function displayResults() {
-  const vehicleSelect = document.getElementById("vehicle");
-  const vehicleName = vehicleSelect.options[vehicleSelect.selectedIndex].text;
-  const rate = Number(vehicleSelect.value);
-  const pickupCity = getCity(pickupPlace);
-  const dropCity   = getCity(dropPlace);
+function showFare(){
+  const rate = Number(document.getElementById("vehicle").value);
+  const isOneWay = document.getElementById("oneway").checked;
+  const isLocal = lastKm < 20; // Example local check
 
-  let html='<div class="result-box">';
+  document.getElementById("tripOptions").style.display = isLocal ? "none" : "flex";
+  
+  let fare = isOneWay ? Math.round(150 + lastKm * rate) : Math.round(lastKm * rate * 2 + 300);
+  if(isLocal) fare = 1800;
 
-  if(pickupCity && dropCity && pickupCity===dropCity){
-    document.getElementById("tripOptions").style.display="none";
-    html+=`<span class="badge local">Local Trip</span><br>
-           <b>Fare:</b> <span style="font-size:18px; color:var(--primary)">₹1800 (8hr/80km)</span>`;
-  }else{
-    document.getElementById("tripOptions").style.display="flex";
-    html+=`<span class="badge outstation">Outstation Trip</span><br>
-           <b>Distance:</b> ${lastKm.toFixed(1)} KM<br>`;
-    if(document.getElementById("oneway").checked)
-      html+=`<b>Fare:</b> <span style="font-size:18px; color:var(--primary)">₹${Math.round(150+lastKm*rate)}</span>`;
-    else
-      html+=`<b>Fare:</b> <span style="font-size:18px; color:var(--primary)">₹${Math.round(lastKm*rate*2+300)}</span>`;
-  }
-  html += '</div>';
-  document.getElementById("result").innerHTML=html;
-  document.getElementById("waBtn").style.display="block";
-}
-
-function openUserForm(){
-  document.getElementById("userForm").style.display="block";
+  document.getElementById("result").innerHTML = `
+    <div class="res-box">
+      <b>Distance:</b> ${lastKm.toFixed(1)} km<br>
+      <b>Est. Fare:</b> <span style="font-size:20px; color:#1a73e8">₹${fare}</span><br>
+      <small>${isLocal ? '(Local Package: 8Hr/80Km)' : ''}</small>
+    </div>`;
+  document.getElementById("waBtn").style.display = "block";
 }
 
 function sendWhatsApp(){
   const name = document.getElementById("custName").value;
   const phone = document.getElementById("custPhone").value;
-  if(!name || !phone){ alert("Fill details"); return; }
-
-  const vehicleName = document.getElementById("vehicle").options[vehicle.selectedIndex].text;
-  const rate = Number(vehicle.value);
-  let fare = getCity(pickupPlace)===getCity(dropPlace) ? "₹1800" : (oneway.checked ? `₹${Math.round(150+lastKm*rate)}` : `₹${Math.round(lastKm*rate*2+300)}`);
-
-  let msg=`Taxi Booking Request%0A*Name:* ${name}%0A*Phone:* ${phone}%0A*Pickup:* ${document.getElementById("pickup").value}%0A*Drop:* ${document.getElementById("drop").value}%0A*Vehicle:* ${vehicleName}%0A*Fare:* ${fare}`;
+  if(!name || !phone){ alert("Enter Details"); return; }
+  
+  const msg = `*BookGadi Request*%0A*Name:* ${name}%0A*Pickup:* ${document.getElementById("pickup").value}%0A*Drop:* ${document.getElementById("drop").value}%0A*Distance:* ${lastKm.toFixed(1)}km`;
   window.open(`https://wa.me/919651191446?text=${msg}`, "_blank");
 }
 </script>
