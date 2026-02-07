@@ -14,8 +14,10 @@
 
 *{box-sizing:border-box;margin:0;padding:0;font-family: 'Segoe UI', sans-serif;}
 
-body{
-  background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+body {
+  background-color: #f3f4f7;
+  background-image: radial-gradient(#d1d5db 1px, transparent 1px);
+  background-size: 20px 20px; /* Chote dots wala background */
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -32,7 +34,7 @@ body{
   box-shadow: 0 25px 50px rgba(0,0,0,0.4);
 }
 
-#map{height:220px; width:100%; background:#e5e3df;}
+#map{height:320px; width:100%; background:#e5e3df;}
 
 .content{padding: 20px;}
 
@@ -129,9 +131,8 @@ select {
     <input id="drop" class="input-box" placeholder="Kahan tak? (Drop Location)">
 
     <select id="vehicle">
-      <option value="11">🚗 Hatchback (₹11/km)</option>
-      <option value="10">🚕 Sedan (₹10/km)</option>
       <option value="12">🚙 SUV (₹12/km)</option>
+      <option value="10">🚕 Sedan (₹10/km)</option>
     </select>
 
     <div id="tripOptions" class="trip-type">
