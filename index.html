@@ -260,7 +260,7 @@ function calculateFare(){
 function updateUI(){
   const rate = Number(document.getElementById("vehicle").value);
   const isRound = document.getElementById("roundtrip").checked;
-  const isLocal = lastKm < 25; 
+  const isLocal = lastKm < 26; 
 
   document.getElementById("tripOptions").style.display = isLocal ? "none" : "flex";
   
