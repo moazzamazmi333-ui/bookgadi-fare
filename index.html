@@ -3,8 +3,48 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BookGadi - Smart Taxi Calculator</title>
 
+<title>BookGadi - Best SUV & Sedan Taxi Fare Calculator | Outstation & Local</title>
+<meta name="description" content="BookGadi offers the most accurate taxi fare calculator for SUV and Sedan. Get instant quotes for outstation one-way, round trips, and local 8hr/80km packages. Book via WhatsApp!">
+<meta name="keywords" content="BookGadi, Taxi Fare Calculator, Online Taxi Booking, SUV Taxi, Sedan Taxi, Outstation Cabs, Local Taxi Package">
+<meta name="author" content="BookGadi">
+<link rel="canonical" href="https://www.bookgadi.com">
+
+<meta property="og:title" content="BookGadi - Smart Taxi Fare Calculator">
+<meta property="og:description" content="Calculate your taxi fare instantly. Best rates for SUV and Sedan. One-way and Round trip available.">
+<meta property="og:url" content="https://www.bookgadi.com">
+<meta property="og:type" content="website">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TaxiService",
+  "name": "BookGadi",
+  "description": "Premium SUV and Sedan taxi services for local and outstation trips.",
+  "url": "https://www.bookgadi.com",
+  "provider": {
+    "@type": "LocalBusiness",
+    "name": "BookGadi",
+    "telephone": "+919651191446",
+    "priceRange": "₹₹"
+  },
+  "areaServed": "India",
+  "hasOfferCatalog": {
+    "@type": "OfferCatalog",
+    "name": "Taxi Services",
+    "itemListElement": [
+      {
+        "@type": "Offer",
+        "itemOffered": { "@type": "Service", "name": "Outstation One Way" }
+      },
+      {
+        "@type": "Offer",
+        "itemOffered": { "@type": "Service", "name": "Local 8hr/80km Package" }
+      }
+    ]
+  }
+}
+</script>
 <style>
 :root {
   --primary: #1a73e8;
@@ -20,6 +60,7 @@ body {
   background-size: 20px 20px; /* Chote dots wala background */
   min-height: 100vh;
   display: flex;
+  flex-direction: column; /* Added for SEO text flow */
   align-items: center;
   justify-content: center;
   padding: 5px;
@@ -116,10 +157,15 @@ select {
 }
 
 #userForm { display: none; margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee; }
+
+/* SEO Friendly Hidden Heading */
+.seo-h1 { position: absolute; left: -9999px; }
 </style>
 </head>
 
 <body>
+
+<h1 class="seo-h1">BookGadi Taxi Fare Calculator - Reliable SUV & Sedan Services</h1>
 
 <div class="card">
   <div id="map"></div>
@@ -135,7 +181,7 @@ select {
       <option value="10">🚕 Sedan (₹10/km)</option>
     </select>
 
-    <div id="tripOptions" class="trip-type">
+    <div id="tripOptions" class="row trip-type">
       <label><input type="radio" name="trip" id="oneway" checked onchange="calculateFare()"> One Way</label>
       <label><input type="radio" name="trip" id="roundtrip" onchange="calculateFare()"> Round Trip</label>
     </div>
