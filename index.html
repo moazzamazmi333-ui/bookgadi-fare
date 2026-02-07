@@ -264,8 +264,8 @@ function updateUI(){
 
   document.getElementById("tripOptions").style.display = isLocal ? "none" : "flex";
   
-  let fare = isRound ? Math.round(lastKm * rate * 2 + 300) : Math.round(150 + lastKm * rate);
-  if(isLocal) fare = 1800;
+  let fare = isRound ? Math.round(lastKm * rate * 2 + 300) : Math.round(199 + lastKm * rate);
+  if(isLocal) fare = 1200;
 
   document.getElementById("result").innerHTML = `
     <div class="fare-card">
