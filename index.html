@@ -2,54 +2,127 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Taxi Fare Calculator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BookGadi - Taxi Fare Calculator</title>
 
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
+:root {
+  --primary: #1a73e8;
+  --secondary: #202124;
+  --success: #25D366;
+  --bg: #f8f9fa;
+  --card-bg: #ffffff;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;font-family: 'Segoe UI', Roboto, sans-serif;}
+
 body{
-  font-family:Arial,system-ui;
-  background:#0f2027;
-  padding:15px;
+  background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
 }
+
 .card{
-  max-width:480px;
-  margin:auto;
-  background:#fff;
-  border-radius:16px;
-  overflow:hidden;
-  box-shadow:0 15px 40px rgba(0,0,0,.3);
+  width: 100%;
+  max-width: 450px;
+  background: var(--card-bg);
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
 }
-#map{height:250px;width:100%}
-.content{padding:15px}
 
-input,select,button{
-  width:100%;
-  padding:12px;
-  margin-top:10px;
-  font-size:15px;
-  border-radius:10px;
-  border:1px solid #ddd;
+#map{height:220px; width:100%; border-bottom: 4px solid var(--primary);}
+
+.content{padding: 25px;}
+
+h2 { font-size: 20px; margin-bottom: 15px; color: var(--secondary); text-align: center; }
+
+.input-group { position: relative; margin-bottom: 15px; }
+
+input, select {
+  width: 100%;
+  padding: 14px 15px;
+  font-size: 15px;
+  border-radius: 12px;
+  border: 2px solid #eee;
+  outline: none;
 }
-button{cursor:pointer;border:none}
 
-.btn-location{background:#1a73e8;color:#fff}
-.btn-primary{background:#000;color:#fff}
-.btn-whatsapp{background:#25D366;color:#fff}
+input:focus, select:focus { border-color: var(--primary); }
 
-.row{display:flex;gap:15px;margin-top:10px}
-#tripOptions,#userForm,#waBtn{display:none}
-
-.badge{
-  display:inline-block;
-  padding:5px 10px;
-  border-radius:50px;
-  font-size:12px;
-  font-weight:bold;
+.btn-location {
+  background: none;
+  color: var(--primary);
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 5px 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
-.local{background:#e8f5e9;color:#2e7d32}
-.outstation{background:#fff3e0;color:#e65100}
 
-#result{margin-top:12px;font-weight:bold;line-height:1.6}
+button {
+  width: 100%;
+  padding: 15px;
+  margin-top: 15px;
+  font-size: 16px;
+  font-weight: bold;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-whatsapp { background: var(--success); color: #fff; }
+
+.row {
+  display: flex;
+  background: #f1f3f4;
+  padding: 5px;
+  border-radius: 12px;
+  margin-top: 15px;
+  gap: 5px;
+}
+
+.row label {
+  flex: 1;
+  text-align: center;
+  padding: 10px;
+  cursor: pointer;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.row input[type="checkbox"] { display: none; }
+.row label:has(input:checked) { background: #fff; color: var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+#tripOptions, #userForm, #waBtn { display: none; }
+
+.result-box {
+  margin-top: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  border-left: 5px solid var(--primary);
+  line-height: 1.8;
+}
+
+.badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  display: inline-block;
+}
+.local { background: #e6f4ea; color: #1e8e3e; }
+.outstation { background: #feefe3; color: #d93025; }
 </style>
 </head>
 
@@ -59,32 +132,37 @@ button{cursor:pointer;border:none}
   <div id="map"></div>
 
   <div class="content">
-    <input id="pickup" placeholder="Pickup Location">
-    <button class="btn-location" onclick="useMyLocation()">📍 Use My Location</button>
+    <h2>Taxi Fare Calculator</h2>
+    
+    <div class="input-group">
+      <input id="pickup" placeholder="Pickup Location">
+      <button class="btn-location" onclick="useMyLocation()">📍 Use My Location</button>
+    </div>
 
-    <input id="drop" placeholder="Drop Location">
+    <div class="input-group">
+      <input id="drop" placeholder="Drop Location">
+    </div>
 
-    <!-- 🔥 FIXED VEHICLE SELECT -->
     <select id="vehicle">
-      <option value="11" selected>Hatchback</option>
-      <option value="10">Sedan</option>
-      <option value="12">SUV</option>
+      <option value="11" selected>🚗 Hatchback (₹11/km)</option>
+      <option value="10">🚕 Sedan (₹10/km)</option>
+      <option value="12">🚙 SUV (₹12/km)</option>
     </select>
 
     <div id="tripOptions" class="row">
-      <label><input type="checkbox" id="oneway" checked onchange="recalculate()"> One Way</label>
-      <label><input type="checkbox" id="roundtrip" onchange="recalculate()"> Round Trip</label>
+      <label><input type="checkbox" id="oneway" checked onchange="handleToggle('oneway')"> One Way</label>
+      <label><input type="checkbox" id="roundtrip" onchange="handleToggle('roundtrip')"> Round Trip</label>
     </div>
 
-    <button class="btn-primary" onclick="calculateFare()">Check Fare</button>
+    <button class="btn-primary" onclick="calculateFare()">Check Price</button>
 
     <div id="result"></div>
 
     <button id="waBtn" class="btn-whatsapp" onclick="openUserForm()">💬 Book on WhatsApp</button>
 
     <div id="userForm">
-      <input id="custName" placeholder="Your Name">
-      <input id="custPhone" placeholder="Mobile Number">
+      <input id="custName" placeholder="Your Name" style="margin-top:10px">
+      <input id="custPhone" type="tel" placeholder="Mobile Number" style="margin-top:10px">
       <button class="btn-whatsapp" onclick="sendWhatsApp()">Send to WhatsApp</button>
     </div>
   </div>
@@ -92,134 +170,129 @@ button{cursor:pointer;border:none}
 
 <script>
 let map, geocoder, pickupAC, dropAC, pickupPlace, dropPlace;
+let directionsService, directionsRenderer;
 let lastKm = 0;
 
 function initMap(){
   geocoder = new google.maps.Geocoder();
-  map = new google.maps.Map(document.getElementById("map"),{
-    center:{lat:26.0739,lng:83.1859}, zoom:7
+  directionsService = new google.maps.DirectionsService();
+  directionsRenderer = new google.maps.DirectionsRenderer({
+    polylineOptions: { strokeColor: "#1a73e8", strokeWeight: 5 }
   });
 
-  pickupAC = new google.maps.places.Autocomplete(pickup,{componentRestrictions:{country:"in"}});
-  dropAC   = new google.maps.places.Autocomplete(drop,{componentRestrictions:{country:"in"}});
+  map = new google.maps.Map(document.getElementById("map"),{
+    center:{lat:26.0739,lng:83.1859}, 
+    zoom:12,
+    disableDefaultUI: true
+  });
+
+  directionsRenderer.setMap(map);
+
+  pickupAC = new google.maps.places.Autocomplete(document.getElementById("pickup"),{componentRestrictions:{country:"in"}});
+  dropAC   = new google.maps.places.Autocomplete(document.getElementById("drop"),{componentRestrictions:{country:"in"}});
 
   pickupAC.addListener("place_changed",()=>pickupPlace=pickupAC.getPlace());
   dropAC.addListener("place_changed",()=>dropPlace=dropAC.getPlace());
 }
 
+function handleToggle(type) {
+    if(type === 'oneway') document.getElementById('roundtrip').checked = false;
+    else document.getElementById('oneway').checked = false;
+    if(pickupPlace && dropPlace) calculateFare();
+}
+
 function useMyLocation(){
-  navigator.geolocation.getCurrentPosition(pos=>{
-    const latlng={lat:pos.coords.latitude,lng:pos.coords.longitude};
-    map.setCenter(latlng); map.setZoom(14);
-    geocoder.geocode({location:latlng},res=>{
-      if(res[0]){pickup.value=res[0].formatted_address;pickupPlace=res[0];}
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(pos=>{
+      const latlng={lat:pos.coords.latitude,lng:pos.coords.longitude};
+      geocoder.geocode({location:latlng},res=>{
+        if(res[0]){ 
+            document.getElementById("pickup").value=res[0].formatted_address; 
+            pickupPlace=res[0]; 
+            map.setCenter(latlng);
+        }
+      });
     });
-  });
+  }
 }
 
 function getCity(place){
   let city="";
+  if(!place || !place.address_components) return "";
   place.address_components.forEach(c=>{
     if(c.types.includes("locality")) city=c.long_name.toLowerCase();
   });
   return city;
 }
 
-function recalculate(){
-  if(pickupPlace && dropPlace) calculateFare();
-}
-
 function calculateFare(){
   if(!pickupPlace || !dropPlace){
-    result.innerHTML="Pickup aur Drop select karein";
+    alert("Please select locations from suggestions");
     return;
   }
 
-  userForm.style.display="none";
-
-  const vehicleSelect = document.getElementById("vehicle");
-  const vehicleName =
-    vehicleSelect.options[vehicleSelect.selectedIndex].text;
-  const rate = Number(vehicleSelect.value);
-
-  const pickupCity = getCity(pickupPlace);
-  const dropCity   = getCity(dropPlace);
-
-  new google.maps.DistanceMatrixService().getDistanceMatrix({
-    origins:[pickupPlace.formatted_address],
-    destinations:[dropPlace.formatted_address],
-    travelMode:"DRIVING",
-    unitSystem:google.maps.UnitSystem.METRIC
-  },res=>{
-    lastKm = res.rows[0].elements[0].distance.value/1000;
-    let html="";
-
-    if(pickupCity===dropCity){
-      tripOptions.style.display="none";
-      html=`<span class="badge local">Local Ride</span><br>
-            Vehicle: ${vehicleName}<br>
-            Package: 8Hr / 80Km<br>
-            Fare: ₹1800`;
-    }else{
-      tripOptions.style.display="flex";
-      html=`<span class="badge outstation">Outstation Ride</span><br>
-            Vehicle: ${vehicleName}<br>
-            Distance: ${lastKm.toFixed(1)} KM<br>`;
-      if(oneway.checked)
-        html+=`One Way Fare: ₹${Math.round(150+lastKm*rate)}<br>`;
-      if(roundtrip.checked)
-        html+=`Round Trip Fare: ₹${Math.round(lastKm*rate*2+300)}<br>`;
+  // Draw Blue Line on Map
+  directionsService.route({
+    origin: pickupPlace.formatted_address,
+    destination: dropPlace.formatted_address,
+    travelMode: 'DRIVING'
+  }, (response, status) => {
+    if (status === 'OK') {
+      directionsRenderer.setDirections(response);
+      lastKm = response.routes[0].legs[0].distance.value / 1000;
+      displayResults();
+    } else {
+      alert("Could not calculate route");
     }
-
-    result.innerHTML=html;
-    waBtn.style.display="block";
   });
 }
 
+function displayResults() {
+  const vehicleSelect = document.getElementById("vehicle");
+  const vehicleName = vehicleSelect.options[vehicleSelect.selectedIndex].text;
+  const rate = Number(vehicleSelect.value);
+  const pickupCity = getCity(pickupPlace);
+  const dropCity   = getCity(dropPlace);
+
+  let html='<div class="result-box">';
+
+  if(pickupCity && dropCity && pickupCity===dropCity){
+    document.getElementById("tripOptions").style.display="none";
+    html+=`<span class="badge local">Local Trip</span><br>
+           <b>Fare:</b> <span style="font-size:18px; color:var(--primary)">₹1800 (8hr/80km)</span>`;
+  }else{
+    document.getElementById("tripOptions").style.display="flex";
+    html+=`<span class="badge outstation">Outstation Trip</span><br>
+           <b>Distance:</b> ${lastKm.toFixed(1)} KM<br>`;
+    if(document.getElementById("oneway").checked)
+      html+=`<b>Fare:</b> <span style="font-size:18px; color:var(--primary)">₹${Math.round(150+lastKm*rate)}</span>`;
+    else
+      html+=`<b>Fare:</b> <span style="font-size:18px; color:var(--primary)">₹${Math.round(lastKm*rate*2+300)}</span>`;
+  }
+  html += '</div>';
+  document.getElementById("result").innerHTML=html;
+  document.getElementById("waBtn").style.display="block";
+}
+
 function openUserForm(){
-  userForm.style.display="block";
+  document.getElementById("userForm").style.display="block";
 }
 
 function sendWhatsApp(){
-  if(!custName.value || !custPhone.value){
-    alert("Name aur Mobile bhare");
-    return;
-  }
+  const name = document.getElementById("custName").value;
+  const phone = document.getElementById("custPhone").value;
+  if(!name || !phone){ alert("Fill details"); return; }
 
-  const vehicleSelect=document.getElementById("vehicle");
-  const vehicleName=vehicleSelect.options[vehicleSelect.selectedIndex].text;
-  const rate=Number(vehicleSelect.value);
+  const vehicleName = document.getElementById("vehicle").options[vehicle.selectedIndex].text;
+  const rate = Number(vehicle.value);
+  let fare = getCity(pickupPlace)===getCity(dropPlace) ? "₹1800" : (oneway.checked ? `₹${Math.round(150+lastKm*rate)}` : `₹${Math.round(lastKm*rate*2+300)}`);
 
-  let msg=`Taxi Booking
-Name: ${custName.value}
-Mobile: ${custPhone.value}
-Vehicle: ${vehicleName}
-Pickup: ${pickup.value}
-Drop: ${drop.value}
-Distance: ${lastKm.toFixed(1)} KM
-`;
-
-  if(getCity(pickupPlace)===getCity(dropPlace)){
-    msg+=`Local Ride
-Package: 8Hr / 80Km
-Fare: ₹1800`;
-  }else{
-    if(oneway.checked)
-      msg+=`One Way Fare: ₹${Math.round(150+lastKm*rate)}\n`;
-    if(roundtrip.checked)
-      msg+=`Round Trip Fare: ₹${Math.round(lastKm*rate*2+300)}\n`;
-  }
-
-  window.open(
-    "https://wa.me/919651191446?text="+encodeURIComponent(msg),
-    "_blank"
-  );
+  let msg=`Taxi Booking Request%0A*Name:* ${name}%0A*Phone:* ${phone}%0A*Pickup:* ${document.getElementById("pickup").value}%0A*Drop:* ${document.getElementById("drop").value}%0A*Vehicle:* ${vehicleName}%0A*Fare:* ${fare}`;
+  window.open(`https://wa.me/919651191446?text=${msg}`, "_blank");
 }
 </script>
 
-<script
-src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8fFUPeGfUy8Wwh-mQ_d3fbGZzKBy7VwM&libraries=places&callback=initMap"
-async defer></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8fFUPeGfUy8Wwh-mQ_d3fbGZzKBy7VwM&libraries=places&callback=initMap" async defer></script>
 
 </body>
 </html>
