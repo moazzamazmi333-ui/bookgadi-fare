@@ -260,12 +260,12 @@ function calculateFare(){
 function updateUI(){
   const rate = Number(document.getElementById("vehicle").value);
   const isRound = document.getElementById("roundtrip").checked;
-  const isLocal = lastKm < 26; 
+  const isLocal = lastKm < 5; 
 
   document.getElementById("tripOptions").style.display = isLocal ? "none" : "flex";
   
   let fare = isRound ? Math.round(lastKm * rate * 2 + 300) : Math.round(250 + lastKm * rate);
-  if(isLocal) fare = 1200;
+  if(isLocal) fare = 500;
 
   document.getElementById("result").innerHTML = `
     <div class="fare-card">
