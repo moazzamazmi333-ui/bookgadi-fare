@@ -184,6 +184,7 @@ function initMap(){
 
   pickupAC = new google.maps.places.Autocomplete(document.getElementById("pickup"),{componentRestrictions:{country:"in"}});
   dropAC   = new google.maps.places.Autocomplete(document.getElementById("drop"),{componentRestrictions:{country:"in"}});
+  
   pickupAC.addListener("place_changed",()=> { pickupPlace = pickupAC.getPlace(); });
   dropAC.addListener("place_changed",()=> { dropPlace = dropAC.getPlace(); });
 }
@@ -233,7 +234,7 @@ function updateUI(){
       <b>Duri:</b> ${lastKm.toFixed(1)} km<br>
       <b>Kiraaya:</b> <span id="finalFare" style="font-size:22px; color:var(--primary)">₹${fare}</span>
       <div class="info-note">
-        ⚠️ <b>Note:</b> Toll Tax, State Tax, Parking aur Driver Allowance alag se देना होगा।
+        ⚠️ <b>Note:</b> Toll, State Tax & Parking extra.
       </div>
     </div>`;
   document.getElementById("waBtn").style.display = "block";
@@ -247,31 +248,27 @@ function sendWhatsApp(){
   const date = document.getElementById("rideDate").value;
   const time = document.getElementById("rideTime").value;
   const vehicle = document.getElementById("vehicle").options[document.getElementById("vehicle").selectedIndex].text;
-  
-  // Trip Type Check
   const isRound = document.getElementById("roundtrip").checked;
   const tripType = isRound ? "Round Trip" : "One Way";
 
   if(!name || !phone || !date || !time) { alert("Details bharein"); return; }
   
   const fareVal = document.getElementById("finalFare").innerText;
-  const pickup = document.getElementById("pickup").value;
-  const drop = document.getElementById("drop").value;
+  const pickupAddr = document.getElementById("pickup").value;
+  const dropAddr = document.getElementById("drop").value;
 
-  // GOOGLE MAPS LINK (Correct Format)
-  const pickupLink = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(pickup);
-  const dropLink = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(drop);
+  // GOOGLE MAPS NAVIGATION LINK FORMAT (Best for WhatsApp)
+  const pickupLink = "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(pickupAddr);
+  const dropLink = "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(dropAddr);
 
   const msg = `*BookGadi Booking Request*%0A` +
               `----------------------------%0A` +
               `*Vehicle:* ${vehicle}%0A` +
-              `*Trip Type:* ${tripType}%0A` +
-              `*Customer:* ${name}%0A` +
+              `*Trip:* ${tripType}%0A` +
+              `*Name:* ${name}%0A` +
               `*Mobile:* ${phone}%0A` +
-              `*Date/Time:* ${date} | ${time}%0A` +
+              `*Date:* ${date} | ${time}%0A` +
               `*Fare:* ${fareVal}%0A` +
-              `----------------------------%0A` +
-              `*Note:* Toll, Parking, State Tax Extra.%0A` +
               `----------------------------%0A` +
               `*Pickup Location:*%0A${pickupLink}%0A%0A` +
               `*Drop Location:*%0A${dropLink}`;
