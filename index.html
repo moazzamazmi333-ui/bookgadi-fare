@@ -184,10 +184,15 @@ function useMyLocation(){
 }
 
 function calculateFare(){
-  if(!pickupPlace || !dropPlace) { alert("Dono location select karein"); return; }
+  // Check if text exists in boxes
+  const p_val = document.getElementById("pickup").value;
+  const d_val = document.getElementById("drop").value;
+
+  if(!p_val || !d_val) { alert("Dono location bharein"); return; }
+
   directionsService.route({
-    origin: pickupPlace.formatted_address || pickupPlace.geometry.location,
-    destination: dropPlace.formatted_address || dropPlace.geometry.location,
+    origin: p_val,
+    destination: d_val,
     travelMode: 'DRIVING'
   }, (res, status) => {
     if (status === 'OK') {
@@ -228,19 +233,20 @@ function sendWhatsApp(){
   const vehicle = document.getElementById("vehicle").options[document.getElementById("vehicle").selectedIndex].text;
   const tripType = document.getElementById("roundtrip").checked ? "Round Trip" : "One Way";
 
-  const p_addr = document.getElementById("pickup").value;
-  const d_addr = document.getElementById("drop").value;
+  // Fetching values directly from the input fields to ensure they are NOT empty
+  const pickupVal = document.getElementById("pickup").value;
+  const dropVal = document.getElementById("drop").value;
 
-  if(!name || !phone || !date || !time || !p_addr || !d_addr) { 
-    alert("Kripya saari details bharein!"); 
+  if(!name || !phone || !date || !time || !pickupVal || !dropVal) { 
+    alert("Kripya saari details (Naam, Number, Locations) bharein!"); 
     return; 
   }
   
   const fareVal = document.getElementById("finalFare").innerText;
 
-  // GOOGLE MAPS DIRECT LINKS
-  const pickupLink = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(p_addr);
-  const dropLink = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(d_addr);
+  // NEVIGATION LINKS (Clean & Fast)
+  const pickupLink = "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(pickupVal);
+  const dropLink = "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(dropVal);
 
   const msg = `*BookGadi Booking Request*%0A` +
               `----------------------------%0A` +
