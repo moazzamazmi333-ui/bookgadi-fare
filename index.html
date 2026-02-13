@@ -3,13 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>BookGadi - Best SUV & Sedan Taxi Fare Calculator | Book via WhatsApp</title>
 <meta name="description" content="BookGadi offers the best taxi fare calculator for SUV & Sedan. Get instant quotes for outstation one-way, round trips, and local packages in Lucknow.">
 <meta name="keywords" content="BookGadi, Taxi Fare Calculator, Online Taxi Booking, SUV Taxi, Sedan Taxi, Outstation Cabs, BookGadi Lucknow">
 <meta name="author" content="BookGadi">
 <link rel="canonical" href="https://www.bookgadi.com">
-
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -25,7 +23,6 @@
   "description": "Premium SUV and Sedan taxi services for local and outstation trips."
 }
 </script>
-
 <style>
 :root {
   --primary: #1a73e8;
@@ -85,7 +82,6 @@ select {
   display: flex;
   gap: 10px;
   margin-bottom: 15px;
-  display: none; 
 }
 .trip-type label {
   flex: 1;
@@ -109,7 +105,7 @@ select {
   cursor: pointer;
 }
 .btn-calc { background: var(--dark); color: #fff; }
-.btn-wa { background: var(--success); color: #fff; margin-top: 10px; display: none; }
+.btn-wa { background: var(--success); color: #fff; margin-top: 10px; }
 #result { margin-top: 15px; }
 .fare-card {
   padding: 15px;
@@ -131,40 +127,34 @@ select {
 .seo-h1 { position: absolute; left: -9999px; }
 </style>
 </head>
-
 <body>
-
 <h1 class="seo-h1">BookGadi Taxi Fare Calculator Lucknow - SUV & Sedan Services</h1>
-
 <div class="card">
   <div id="map"></div>
   <div class="content">
     <input id="pickup" class="input-box" placeholder="Kahan se? (Pickup Location)">
     <button class="btn-loc" id="locBtn" onclick="useMyLocation()">📍 Current Location Use Karein</button>
     <input id="drop" class="input-box" placeholder="Kahan tak? (Drop Location)">
-
     <select id="vehicle">
       <option value="12">🚙 SUV (₹12/km)</option>
       <option value="10">🚕 Sedan (₹10/km)</option>
     </select>
-
-    <div id="tripOptions" class="row trip-type">
+    <div id="tripOptions" class="trip-type">
       <label><input type="radio" name="trip" id="oneway" checked onchange="calculateFare()"> One Way</label>
       <label><input type="radio" name="trip" id="roundtrip" onchange="calculateFare()"> Round Trip</label>
     </div>
-
     <button class="main-btn btn-calc" onclick="calculateFare()">Kiraaya Dekhein</button>
     <div id="result"></div>
-    <button id="waBtn" class="main-btn btn-wa" onclick="openBooking()">💬 Booking Details Bharein</button>
-
+    <button id="waBtn" class="main-btn btn-wa" onclick="openBooking()" style="display:none">💬 Booking WhatsApp Karein</button>
+    
     <div id="userForm">
       <input id="custName" class="input-box" placeholder="Aapka Naam">
-      <input id="custPhone" class="input-box" type="tel" placeholder="Mobile Number">
+      <input id="custPhone" class="input-box" type="tel" placeholder="Mobile Number (10 digit)" pattern="[0-9]{10}">
       <div style="display: flex; gap: 10px;">
         <input id="rideDate" class="input-box" type="date" style="flex: 1.2;">
         <input id="rideTime" class="input-box" type="time" style="flex: 0.8;">
       </div>
-      <button class="main-btn btn-wa" style="display:block" onclick="sendWhatsApp()">Confirm & WhatsApp Book</button>
+      <button class="main-btn btn-wa" onclick="sendWhatsApp()">Confirm & WhatsApp Book Karein</button>
     </div>
   </div>
 </div>
@@ -178,36 +168,48 @@ function initMap(){
   geocoder = new google.maps.Geocoder();
   directionsService = new google.maps.DirectionsService();
   directionsRenderer = new google.maps.DirectionsRenderer({ polylineOptions: { strokeColor: "#1a73e8", strokeWeight: 5 } });
-
   map = new google.maps.Map(document.getElementById("map"),{
-    center:{lat:26.0739, lng:83.1859}, zoom:9, zoomControl: true, fullscreenControl: true, streetViewControl: false, mapTypeControl: false
+    center:{lat:26.8467, lng:80.9462}, // Lucknow default
+    zoom:10,
+    zoomControl: true,
+    fullscreenControl: true,
+    streetViewControl: false,
+    mapTypeControl: false
   });
   directionsRenderer.setMap(map);
-
   pickupAC = new google.maps.places.Autocomplete(document.getElementById("pickup"),{componentRestrictions:{country:"in"}});
-  dropAC   = new google.maps.places.Autocomplete(document.getElementById("drop"),{componentRestrictions:{country:"in"}});
+  dropAC = new google.maps.places.Autocomplete(document.getElementById("drop"),{componentRestrictions:{country:"in"}});
 }
 
 function useMyLocation(){
   const btn = document.getElementById("locBtn");
-  btn.innerText = "⌛ Finding...";
+  btn.innerText = "⌛ Dhoondh rahe hain...";
   navigator.geolocation.getCurrentPosition((pos) => {
     const latlng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
     geocoder.geocode({ location: latlng }, (results, status) => {
       if (status === "OK" && results[0]) {
         document.getElementById("pickup").value = results[0].formatted_address;
-        map.setCenter(latlng); map.setZoom(15);
-        btn.innerText = "✅ Done";
+        map.setCenter(latlng);
+        map.setZoom(15);
+        btn.innerText = "✅ Location Set";
+      } else {
+        btn.innerText = "📍 Retry";
+        alert("Location nahi mili");
       }
     });
-  }, () => { alert("Allow Location Access"); btn.innerText = "📍 Retry"; });
+  }, () => {
+    alert("Location access allow karein");
+    btn.innerText = "📍 Current Location";
+  });
 }
 
 function calculateFare(){
-  const p_val = document.getElementById("pickup").value;
-  const d_val = document.getElementById("drop").value;
-
-  if(!p_val || !d_val) { alert("Dono location bharein"); return; }
+  const p_val = document.getElementById("pickup").value.trim();
+  const d_val = document.getElementById("drop").value.trim();
+  if(!p_val || !d_val) {
+    alert("Pickup aur Drop dono locations daalein");
+    return;
+  }
 
   directionsService.route({
     origin: p_val,
@@ -218,72 +220,77 @@ function calculateFare(){
       directionsRenderer.setDirections(res);
       lastKm = res.routes[0].legs[0].distance.value / 1000;
       updateUI();
-    } else { alert("Rasta nahi mila!"); }
+    } else {
+      alert("Route nahi mila – locations check karein");
+    }
   });
 }
 
 function updateUI(){
   const rate = Number(document.getElementById("vehicle").value);
   const isRound = document.getElementById("roundtrip").checked;
-  const isLocal = lastKm < 5; 
+  const isLocal = lastKm < 5;
+
   document.getElementById("tripOptions").style.display = isLocal ? "none" : "flex";
-  
+
   let fare = isRound ? Math.round(lastKm * rate * 2 + 300) : Math.round(250 + lastKm * rate);
   if(isLocal) fare = 500;
 
   document.getElementById("result").innerHTML = `
     <div class="fare-card">
-      <b>Duri:</b> ${lastKm.toFixed(1)} km<br>
-      <b>Kiraaya:</b> <span id="finalFare" style="font-size:22px; color:var(--primary)">₹${fare}</span>
+      <b>Distance:</b> ${lastKm.toFixed(1)} km<br>
+      <b>Estimated Fare:</b> <span id="finalFare" style="font-size:22px; color:var(--primary)">₹${fare}</span>
       <div class="info-note">
-        ⚠️ <b>Note:</b> Toll, State Tax & Parking extra dena hoga.
+        ⚠️ Toll, State Tax, Parking aur Driver allowance alag se dena hoga.
       </div>
     </div>`;
+
   document.getElementById("waBtn").style.display = "block";
 }
 
-function openBooking(){ document.getElementById("userForm").style.display = "block"; }
+function openBooking(){
+  document.getElementById("userForm").style.display = "block";
+  document.getElementById("waBtn").style.display = "none";
+}
 
 function sendWhatsApp(){
-  const name = document.getElementById("custName").value;
-  const phone = document.getElementById("custPhone").value;
-  const date = document.getElementById("rideDate").value;
-  const time = document.getElementById("rideTime").value;
-  const vehicle = document.getElementById("vehicle").options[document.getElementById("vehicle").selectedIndex].text;
-  const tripType = document.getElementById("roundtrip").checked ? "Round Trip" : "One Way";
-  
-  // yahan se value sahi tarike se uthayi gayi hai
-  const pickupVal = document.getElementById("pickup").value;
-  const dropVal = document.getElementById("drop").value;
+  const name      = document.getElementById("custName").value.trim();
+  const phone     = document.getElementById("custPhone").value.trim();
+  const date      = document.getElementById("rideDate").value;
+  const time      = document.getElementById("rideTime").value;
+  const vehicle   = document.getElementById("vehicle").options[document.getElementById("vehicle").selectedIndex].text;
+  const tripType  = document.getElementById("roundtrip").checked ? "Round Trip" : "One Way";
+  const pickupVal = document.getElementById("pickup").value.trim();
+  const dropVal   = document.getElementById("drop").value.trim();
+  const fareVal   = document.getElementById("finalFare").innerText;
 
-  if(!name || !phone || !date || !time || !pickupVal || !dropVal) { 
-    alert("Kripya saari details bharein!"); 
-    return; 
+  if(!name || !phone || phone.length !== 10 || !/^\d{10}$/.test(phone) || !date || !time || !pickupVal || !dropVal) {
+    alert("Saari details sahi se bharein (10 digit mobile number daalein)");
+    return;
   }
-  
-  const fareVal = document.getElementById("finalFare").innerText;
 
-  // GOOGLE MAPS DIRECT LINKS
-  const pLink = "https://www.google.com/maps/dir/?api=1&origin=" + encodeURIComponent(pickupVal);
-  const dLink = "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(dropVal);
+  // Full proper Google Maps directions link
+  const routeLink = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(pickupVal)}&destination=${encodeURIComponent(dropVal)}&travelmode=driving`;
 
   const msg = `*BookGadi Booking Request*%0A` +
-              `----------------------------%0A` +
-              `*Vehicle:* ${vehicle}%0A` +
-              `*Trip:* ${tripType}%0A` +
-              `*Customer:* ${name}%0A` +
-              `*Mobile:* ${phone}%0A` +
-              `*Date:* ${date} | ${time}%0A` +
-              `*Fare:* ${fareVal}%0A` +
-              `----------------------------%0A` +
-              `*Pickup Address:* ${pickupVal}%0A` +
-              `*Pickup Link:* ${pLink}%0A%0A` +
-              `*Drop Address:* ${dropVal}%0A` +
-              `*Drop Link:* ${dLink}`;
+              `────────────────────────────%0A` +
+              `🚗 *Vehicle:* ${vehicle}%0A` +
+              `🛣️ *Trip:* ${tripType}%0A` +
+              `👤 *Name:* ${name}%0A` +
+              `📞 *Mobile:* ${phone}%0A` +
+              `🗓️ *Date & Time:* ${date} ${time}%0A` +
+              `💰 *Estimated Fare:* ${fareVal}%0A` +
+              `────────────────────────────%0A` +
+              `📍 *Pickup:* ${pickupVal}%0A` +
+              `📍 *Drop:* ${dropVal}%0A` +
+              `🗺️ *Full Route on Google Maps:*%0A${routeLink}%0A` +
+              `────────────────────────────%0A` +
+              `Jaldi confirm karein! 🙏`;
 
-  window.open(`https://wa.me/919651191446?text=${msg}`, "_blank");
+  window.open(`https://wa.me/919651191446?text=${encodeURIComponent(msg)}`, "_blank");
 }
 </script>
+
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8fFUPeGfUy8Wwh-mQ_d3fbGZzKBy7VwM&libraries=places&callback=initMap" async defer></script>
 </body>
 </html>
