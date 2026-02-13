@@ -260,8 +260,8 @@ function sendWhatsApp(){
   const time      = document.getElementById("rideTime").value;
   const vehicle   = document.getElementById("vehicle").options[document.getElementById("vehicle").selectedIndex].text;
   const tripType  = document.getElementById("roundtrip").checked ? "Round" : "One Way";
-  const pickupVal = document.getElementById("pickup").value.trim();
-  const dropVal   = document.getElementById("drop").value.trim();
+  let pickupVal   = document.getElementById("pickup").value.trim();
+  let dropVal     = document.getElementById("drop").value.trim();
   const fareVal   = document.getElementById("finalFare").innerText;
 
   if(!name || !phone || phone.length !== 10 || !/^\d{10}$/.test(phone) || !date || !time || !pickupVal || !dropVal) {
@@ -269,22 +269,26 @@ function sendWhatsApp(){
     return;
   }
 
-  // Full Google Maps route link
+  // Fix for + in Plus Codes: replace + with %2B BEFORE encoding the URL parts
+  pickupVal = pickupVal.replace(/\+/g, '%2B');
+  dropVal   = dropVal.replace(/\+/g, '%2B');
+
   const routeLink = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(pickupVal)}&destination=${encodeURIComponent(dropVal)}&travelmode=driving`;
 
-  // ─── More concise message ────────────────────────────────
-  const msg = `*Booking Request – BookGadi*%0A` +
-              `────────────────────%0A` +
-              `🚗 ${vehicle} | ${tripType}%0A` +
-              `👤 ${name} | ${phone}%0A` +
-              `🗓️ ${date} ${time}%0A` +
-              `💰 ${fareVal}%0A` +
-              `────────────────────%0A` +
-              `Pickup: ${pickupVal}%0A` +
-              `Drop:   ${dropVal}%0A` +
-              `Route:  ${routeLink}`;
+  // Concise + double line breaks for better spacing + bold where useful
+  const msg = `*BookGadi Booking*\n\n` +
+              `🚗 *${vehicle} | ${tripType}*\n` +
+              `👤 ${name} | ${phone}\n` +
+              `🗓️ ${date} ${time}\n` +
+              `💰 *${fareVal}*\n\n` +
+              `Pickup: ${pickupVal}\n` +
+              `Drop: ${dropVal}\n` +
+              `Route: ${routeLink}`;
 
-  window.open(`https://wa.me/919651191446?text=${encodeURIComponent(msg)}`, "_blank");
+  // Double-encode the FULL message to preserve %0A / %0A%0A and special chars
+  const encodedMsg = encodeURIComponent(msg);
+
+  window.open(`https://wa.me/919651191446?text=${encodedMsg}`, "_blank");
 }
 </script>
 
