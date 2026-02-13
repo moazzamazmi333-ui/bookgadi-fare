@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BookGadi - Smart Taxi Fare Calculator</title>
+<title>BookGadi - Best SUV & Sedan Taxi Fare Calculator</title>
 
 <style>
 :root {
@@ -46,8 +46,6 @@ body {
   margin-bottom: 10px;
   outline: none;
 }
-
-.input-box:focus { border-color: var(--primary); }
 
 .btn-loc {
   background: #f1f3f4;
@@ -235,7 +233,7 @@ function updateUI(){
       <b>Duri:</b> ${lastKm.toFixed(1)} km<br>
       <b>Kiraaya:</b> <span id="finalFare" style="font-size:22px; color:var(--primary)">₹${fare}</span>
       <div class="info-note">
-        ⚠️ <b>Note:</b> Toll Tax, State Tax, Parking aur Driver Allowance alag se dena hoga.
+        ⚠️ <b>Note:</b> Toll Tax, State Tax, Parking aur Driver Allowance alag se देना होगा।
       </div>
     </div>`;
   document.getElementById("waBtn").style.display = "block";
@@ -249,6 +247,10 @@ function sendWhatsApp(){
   const date = document.getElementById("rideDate").value;
   const time = document.getElementById("rideTime").value;
   const vehicle = document.getElementById("vehicle").options[document.getElementById("vehicle").selectedIndex].text;
+  
+  // Trip Type Check
+  const isRound = document.getElementById("roundtrip").checked;
+  const tripType = isRound ? "Round Trip" : "One Way";
 
   if(!name || !phone || !date || !time) { alert("Details bharein"); return; }
   
@@ -256,18 +258,23 @@ function sendWhatsApp(){
   const pickup = document.getElementById("pickup").value;
   const drop = document.getElementById("drop").value;
 
+  // GOOGLE MAPS LINK (Correct Format)
+  const pickupLink = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(pickup);
+  const dropLink = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(drop);
+
   const msg = `*BookGadi Booking Request*%0A` +
               `----------------------------%0A` +
               `*Vehicle:* ${vehicle}%0A` +
+              `*Trip Type:* ${tripType}%0A` +
               `*Customer:* ${name}%0A` +
               `*Mobile:* ${phone}%0A` +
               `*Date/Time:* ${date} | ${time}%0A` +
               `*Fare:* ${fareVal}%0A` +
               `----------------------------%0A` +
-              `*Note:* Toll, Parking, State Tax & Driver DA Extra.%0A` +
+              `*Note:* Toll, Parking, State Tax Extra.%0A` +
               `----------------------------%0A` +
-              `*Pickup:* http://maps.google.com/?q=${encodeURIComponent(pickup)}%0A` +
-              `*Drop:* http://maps.google.com/?q=${encodeURIComponent(drop)}`;
+              `*Pickup Location:*%0A${pickupLink}%0A%0A` +
+              `*Drop Location:*%0A${dropLink}`;
 
   window.open(`https://wa.me/919651191446?text=${msg}`, "_blank");
 }
