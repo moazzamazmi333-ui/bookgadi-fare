@@ -259,33 +259,30 @@ function sendWhatsApp(){
   const date      = document.getElementById("rideDate").value;
   const time      = document.getElementById("rideTime").value;
   const vehicle   = document.getElementById("vehicle").options[document.getElementById("vehicle").selectedIndex].text;
-  const tripType  = document.getElementById("roundtrip").checked ? "Round Trip" : "One Way";
+  const tripType  = document.getElementById("roundtrip").checked ? "Round" : "One Way";
   const pickupVal = document.getElementById("pickup").value.trim();
   const dropVal   = document.getElementById("drop").value.trim();
   const fareVal   = document.getElementById("finalFare").innerText;
 
   if(!name || !phone || phone.length !== 10 || !/^\d{10}$/.test(phone) || !date || !time || !pickupVal || !dropVal) {
-    alert("Saari details sahi se bharein (10 digit mobile number daalein)");
+    alert("Saari details sahi se bharein (10 digit mobile number)");
     return;
   }
 
-  // Full proper Google Maps directions link
+  // Full Google Maps route link
   const routeLink = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(pickupVal)}&destination=${encodeURIComponent(dropVal)}&travelmode=driving`;
 
-  const msg = `*BookGadi Booking Request*%0A` +
-              `────────────────────────────%0A` +
-              `🚗 *Vehicle:* ${vehicle}%0A` +
-              `🛣️ *Trip:* ${tripType}%0A` +
-              `👤 *Name:* ${name}%0A` +
-              `📞 *Mobile:* ${phone}%0A` +
-              `🗓️ *Date & Time:* ${date} ${time}%0A` +
-              `💰 *Estimated Fare:* ${fareVal}%0A` +
-              `────────────────────────────%0A` +
-              `📍 *Pickup:* ${pickupVal}%0A` +
-              `📍 *Drop:* ${dropVal}%0A` +
-              `🗺️ *Full Route on Google Maps:*%0A${routeLink}%0A` +
-              `────────────────────────────%0A` +
-              `Jaldi confirm karein! 🙏`;
+  // ─── More concise message ────────────────────────────────
+  const msg = `*Booking Request – BookGadi*%0A` +
+              `────────────────────%0A` +
+              `🚗 ${vehicle} | ${tripType}%0A` +
+              `👤 ${name} | ${phone}%0A` +
+              `🗓️ ${date} ${time}%0A` +
+              `💰 ${fareVal}%0A` +
+              `────────────────────%0A` +
+              `Pickup: ${pickupVal}%0A` +
+              `Drop:   ${dropVal}%0A` +
+              `Route:  ${routeLink}`;
 
   window.open(`https://wa.me/919651191446?text=${encodeURIComponent(msg)}`, "_blank");
 }
