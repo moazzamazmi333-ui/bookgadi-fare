@@ -1,9 +1,30 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BookGadi - Best SUV & Sedan Taxi Fare Calculator</title>
+
+<title>BookGadi - Best SUV & Sedan Taxi Fare Calculator | Book via WhatsApp</title>
+<meta name="description" content="BookGadi offers the best taxi fare calculator for SUV & Sedan. Get instant quotes for outstation one-way, round trips, and local packages in Lucknow.">
+<meta name="keywords" content="BookGadi, Taxi Fare Calculator, Online Taxi Booking, SUV Taxi, Sedan Taxi, Outstation Cabs, BookGadi Lucknow">
+<meta name="author" content="BookGadi">
+<link rel="canonical" href="https://www.bookgadi.com">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TaxiService",
+  "name": "BookGadi",
+  "url": "https://www.bookgadi.com",
+  "provider": {
+    "@type": "LocalBusiness",
+    "name": "BookGadi",
+    "telephone": "+919651191446"
+  },
+  "areaServed": "India",
+  "description": "Premium SUV and Sedan taxi services for local and outstation trips."
+}
+</script>
 
 <style>
 :root {
@@ -107,10 +128,13 @@ select {
   border: 1px dashed var(--warning);
 }
 #userForm { display: none; margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee; }
+.seo-h1 { position: absolute; left: -9999px; }
 </style>
 </head>
 
 <body>
+
+<h1 class="seo-h1">BookGadi Taxi Fare Calculator Lucknow - SUV & Sedan Services</h1>
 
 <div class="card">
   <div id="map"></div>
@@ -146,7 +170,7 @@ select {
 </div>
 
 <script>
-let map, geocoder, pickupAC, dropAC, pickupPlace, dropPlace, directionsRenderer, directionsService;
+let map, geocoder, pickupAC, dropAC, directionsRenderer, directionsService;
 let lastKm = 0;
 
 function initMap(){
@@ -162,9 +186,6 @@ function initMap(){
 
   pickupAC = new google.maps.places.Autocomplete(document.getElementById("pickup"),{componentRestrictions:{country:"in"}});
   dropAC   = new google.maps.places.Autocomplete(document.getElementById("drop"),{componentRestrictions:{country:"in"}});
-  
-  pickupAC.addListener("place_changed",()=> { pickupPlace = pickupAC.getPlace(); });
-  dropAC.addListener("place_changed",()=> { dropPlace = dropAC.getPlace(); });
 }
 
 function useMyLocation(){
@@ -175,7 +196,6 @@ function useMyLocation(){
     geocoder.geocode({ location: latlng }, (results, status) => {
       if (status === "OK" && results[0]) {
         document.getElementById("pickup").value = results[0].formatted_address;
-        pickupPlace = results[0];
         map.setCenter(latlng); map.setZoom(15);
         btn.innerText = "✅ Done";
       }
@@ -184,7 +204,6 @@ function useMyLocation(){
 }
 
 function calculateFare(){
-  // Check if text exists in boxes
   const p_val = document.getElementById("pickup").value;
   const d_val = document.getElementById("drop").value;
 
@@ -232,8 +251,6 @@ function sendWhatsApp(){
   const time = document.getElementById("rideTime").value;
   const vehicle = document.getElementById("vehicle").options[document.getElementById("vehicle").selectedIndex].text;
   const tripType = document.getElementById("roundtrip").checked ? "Round Trip" : "One Way";
-
-  // Fetching values directly from the input fields to ensure they are NOT empty
   const pickupVal = document.getElementById("pickup").value;
   const dropVal = document.getElementById("drop").value;
 
@@ -244,7 +261,7 @@ function sendWhatsApp(){
   
   const fareVal = document.getElementById("finalFare").innerText;
 
-  // NEVIGATION LINKS (Clean & Fast)
+  // NEVIGATION LINKS (Using Standard Format for better stability)
   const pickupLink = "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(pickupVal);
   const dropLink = "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(dropVal);
 
