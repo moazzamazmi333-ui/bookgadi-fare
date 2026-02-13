@@ -108,13 +108,14 @@ select {
   border-radius: 12px;
   border: 1.5px solid #eee;
   margin-bottom: 15px;
+  font-weight: 600;
 }
 
 .trip-type {
   display: flex;
   gap: 10px;
   margin-bottom: 15px;
-  display: none; /* Only shows for outstation */
+  display: none; 
 }
 
 .trip-type label {
@@ -155,7 +156,6 @@ select {
 
 #userForm { display: none; margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee; }
 
-/* SEO Friendly Hidden Heading */
 .seo-h1 { position: absolute; left: -9999px; }
 </style>
 </head>
@@ -187,12 +187,18 @@ select {
 
     <div id="result"></div>
 
-    <button id="waBtn" class="main-btn btn-wa" onclick="openBooking()">💬 WhatsApp Par Book Karein</button>
+    <button id="waBtn" class="main-btn btn-wa" onclick="openBooking()">💬 Booking Details Bharein</button>
 
     <div id="userForm">
       <input id="custName" class="input-box" placeholder="Aapka Naam">
       <input id="custPhone" class="input-box" type="tel" placeholder="Mobile Number">
-      <button class="main-btn btn-wa" style="display:block" onclick="sendWhatsApp()">Confirm & Send</button>
+      
+      <div style="display: flex; gap: 10px;">
+        <input id="rideDate" class="input-box" type="date" style="flex: 1.2;">
+        <input id="rideTime" class="input-box" type="time" style="flex: 0.8;">
+      </div>
+
+      <button class="main-btn btn-wa" style="display:block" onclick="sendWhatsApp()">Confirm & WhatsApp Book</button>
     </div>
   </div>
 </div>
@@ -202,14 +208,22 @@ let map, geocoder, pickupAC, dropAC, pickupPlace, dropPlace, directionsRenderer,
 let lastKm = 0;
 
 function initMap(){
+  document.getElementById('rideDate').valueAsDate = new Date();
+
   geocoder = new google.maps.Geocoder();
   directionsService = new google.maps.DirectionsService();
   directionsRenderer = new google.maps.DirectionsRenderer({
     polylineOptions: { strokeColor: "#1a73e8", strokeWeight: 5 }
   });
 
+  // MAP CONTROLS UPDATED: Enabled Zoom and Fullscreen
   map = new google.maps.Map(document.getElementById("map"),{
-    center:{lat:26.0739, lng:83.1859}, zoom:9, disableDefaultUI: true
+    center:{lat:26.0739, lng:83.1859}, 
+    zoom:9, 
+    zoomControl: true,           // Zoom In/Out Buttons
+    fullscreenControl: true,     // Full Screen Button
+    streetViewControl: false, 
+    mapTypeControl: false
   });
   directionsRenderer.setMap(map);
 
@@ -270,7 +284,7 @@ function updateUI(){
   document.getElementById("result").innerHTML = `
     <div class="fare-card">
       <b>Duri:</b> ${lastKm.toFixed(1)} km<br>
-      <b>Kiraaya:</b> <span style="font-size:22px; color:var(--primary)">₹${fare}</span>
+      <b>Kiraaya:</b> <span id="finalFare" style="font-size:22px; color:var(--primary)">₹${fare}</span>
       ${isLocal ? '<br><small>(Local 8Hr/80Km Pack)</small>' : ''}
     </div>`;
   document.getElementById("waBtn").style.display = "block";
@@ -281,10 +295,38 @@ function openBooking(){ document.getElementById("userForm").style.display = "blo
 function sendWhatsApp(){
   const name = document.getElementById("custName").value;
   const phone = document.getElementById("custPhone").value;
-  if(!name || !phone) { alert("Detail bharein"); return; }
+  const date = document.getElementById("rideDate").value;
+  const time = document.getElementById("rideTime").value;
+  const pickup = document.getElementById("pickup").value;
+  const drop = document.getElementById("drop").value;
   
-  const fareVal = document.querySelector(".fare-card span").innerText;
-  const msg = `*BookGadi Booking Request*%0A*Name:* ${name}%0A*Phone:* ${phone}%0A*From:* ${document.getElementById("pickup").value}%0A*To:* ${document.getElementById("drop").value}%0A*Distance:* ${lastKm.toFixed(1)}km%0A*Total Fare:* ${fareVal}`;
+  // Get Vehicle Name
+  const vehicleSelect = document.getElementById("vehicle");
+  const vehicleName = vehicleSelect.options[vehicleSelect.selectedIndex].text;
+
+  if(!name || !phone || !date || !time) { 
+    alert("Kripya saari details (Naam, Number, Date, Time) bharein"); 
+    return; 
+  }
+  
+  const fareVal = document.getElementById("finalFare").innerText;
+  
+  // WhatsApp Maps Links
+  const pickupLink = `http://maps.google.com/?q=${encodeURIComponent(pickup)}`;
+  const dropLink = `http://maps.google.com/?q=${encodeURIComponent(drop)}`;
+
+  const msg = `*BookGadi Booking Request*%0A` +
+              `----------------------------%0A` +
+              `*Vehicle:* ${vehicleName}%0A` +
+              `*Name:* ${name}%0A` +
+              `*Phone:* ${phone}%0A` +
+              `*Date:* ${date}%0A` +
+              `*Time:* ${time}%0A` +
+              `*Fare:* ${fareVal}%0A` +
+              `*Distance:* ${lastKm.toFixed(1)} km%0A%0A` +
+              `*Pickup Location:*%0A${pickupLink}%0A%0A` +
+              `*Drop Location:*%0A${dropLink}`;
+
   window.open(`https://wa.me/919651191446?text=${msg}`, "_blank");
 }
 </script>
