@@ -251,19 +251,21 @@ function sendWhatsApp(){
   const time = document.getElementById("rideTime").value;
   const vehicle = document.getElementById("vehicle").options[document.getElementById("vehicle").selectedIndex].text;
   const tripType = document.getElementById("roundtrip").checked ? "Round Trip" : "One Way";
+  
+  // yahan se value sahi tarike se uthayi gayi hai
   const pickupVal = document.getElementById("pickup").value;
   const dropVal = document.getElementById("drop").value;
 
   if(!name || !phone || !date || !time || !pickupVal || !dropVal) { 
-    alert("Kripya saari details (Naam, Number, Locations) bharein!"); 
+    alert("Kripya saari details bharein!"); 
     return; 
   }
   
   const fareVal = document.getElementById("finalFare").innerText;
 
-  // NEVIGATION LINKS (Using Standard Format for better stability)
-  const pickupLink = "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(pickupVal);
-  const dropLink = "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(dropVal);
+  // GOOGLE MAPS DIRECT LINKS
+  const pLink = "https://www.google.com/maps/dir/?api=1&origin=" + encodeURIComponent(pickupVal);
+  const dLink = "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(dropVal);
 
   const msg = `*BookGadi Booking Request*%0A` +
               `----------------------------%0A` +
@@ -274,8 +276,10 @@ function sendWhatsApp(){
               `*Date:* ${date} | ${time}%0A` +
               `*Fare:* ${fareVal}%0A` +
               `----------------------------%0A` +
-              `*Pickup Location:*%0A${pickupLink}%0A%0A` +
-              `*Drop Location:*%0A${dropLink}`;
+              `*Pickup Address:* ${pickupVal}%0A` +
+              `*Pickup Link:* ${pLink}%0A%0A` +
+              `*Drop Address:* ${dropVal}%0A` +
+              `*Drop Link:* ${dLink}`;
 
   window.open(`https://wa.me/919651191446?text=${msg}`, "_blank");
 }
