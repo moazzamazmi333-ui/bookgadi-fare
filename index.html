@@ -198,7 +198,7 @@ async function createPaymentLink(amount, name, phone, description) {
     return data.short_url || data.url; // short_url is preferred (rzp.io/...)
   } catch (err) {
     console.error('Payment link error:', err);
-    alert('UPI link bana nahi paya. Direct WhatsApp se book karein ya call karein.');
+    alert('UPI Payment Soon. Direct WhatsApp se book karein ya call karein.');
     return null;
   }
 }
