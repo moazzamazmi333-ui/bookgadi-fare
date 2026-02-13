@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BookGadi - Best SUV & Sedan Taxi Fare Calculator | Book via WhatsApp</title>
-<meta name="description" content="BookGadi offers the best taxi fare calculator for SUV & Sedan. Get instant quotes for outstation one-way, round trips, and local packages in Lucknow.">
-<meta name="keywords" content="BookGadi, Taxi Fare Calculator, Online Taxi Booking, SUV Taxi, Sedan Taxi, Outstation Cabs, BookGadi Lucknow">
+<title>BookGadi - Best SUV & Sedan Taxi Fare Calculator | Book via WhatsApp + UPI</title>
+<meta name="description" content="BookGadi offers the best taxi fare calculator for SUV & Sedan. Get instant quotes for outstation one-way, round trips, and local packages in Lucknow. Pay via UPI.">
+<meta name="keywords" content="BookGadi, Taxi Fare Calculator, Online Taxi Booking, SUV Taxi, Sedan Taxi, Outstation Cabs, BookGadi Lucknow, UPI Payment">
 <meta name="author" content="BookGadi">
 <link rel="canonical" href="https://www.bookgadi.com">
 <script type="application/ld+json">
@@ -20,7 +20,7 @@
     "telephone": "+919651191446"
   },
   "areaServed": "India",
-  "description": "Premium SUV and Sedan taxi services for local and outstation trips."
+  "description": "Premium SUV and Sedan taxi services for local and outstation trips with easy UPI payment."
 }
 </script>
 <style>
@@ -128,7 +128,7 @@ select {
 </style>
 </head>
 <body>
-<h1 class="seo-h1">BookGadi Taxi Fare Calculator Lucknow - SUV & Sedan Services</h1>
+<h1 class="seo-h1">BookGadi Taxi Fare Calculator Lucknow - SUV & Sedan Services with UPI</h1>
 <div class="card">
   <div id="map"></div>
   <div class="content">
@@ -145,7 +145,7 @@ select {
     </div>
     <button class="main-btn btn-calc" onclick="calculateFare()">Kiraaya Dekhein</button>
     <div id="result"></div>
-    <button id="waBtn" class="main-btn btn-wa" onclick="openBooking()" style="display:none">💬 Booking WhatsApp Karein</button>
+    <button id="waBtn" class="main-btn btn-wa" onclick="openBooking()" style="display:none">💬 Booking WhatsApp Karein (UPI Pay)</button>
     
     <div id="userForm">
       <input id="custName" class="input-box" placeholder="Aapka Naam">
@@ -154,7 +154,7 @@ select {
         <input id="rideDate" class="input-box" type="date" style="flex: 1.2;">
         <input id="rideTime" class="input-box" type="time" style="flex: 0.8;">
       </div>
-      <button class="main-btn btn-wa" onclick="sendWhatsApp()">Confirm & WhatsApp Book Karein</button>
+      <button class="main-btn btn-wa" onclick="sendWhatsApp()">Confirm & WhatsApp + UPI Link Bhejein</button>
     </div>
   </div>
 </div>
@@ -163,13 +163,53 @@ select {
 let map, geocoder, pickupAC, dropAC, directionsRenderer, directionsService;
 let lastKm = 0;
 
+// Razorpay credentials - REPLACE THESE WITH YOUR REAL ONES!
+const RAZORPAY_KEY_ID = 'rzp_test_QHhVLGggXsPGID';     // ← Test or Live Key ID
+const RAZORPAY_KEY_SECRET = 'YOUR_KEY_SECRET_HERE';     // ← NEVER expose in production!
+
+async function createPaymentLink(amount, name, phone, description) {
+  try {
+    const response = await fetch('https://api.razorpay.com/v1/payment_links', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Basic ' + btoa(RAZORPAY_KEY_ID + ':' + RAZORPAY_KEY_SECRET)
+      },
+      body: JSON.stringify({
+        amount: Math.round(amount * 100), // paise
+        currency: 'INR',
+        description: description,
+        customer: {
+          name: name,
+          contact: phone.startsWith('+91') ? phone : '+91' + phone,
+          email: 'customer@bookgadi.com' // optional - add email field if needed
+        },
+        notify: { sms: true, email: false },
+        expire_by: Math.floor(Date.now() / 1000) + 86400, // 24 hours
+        callback_url: 'https://www.bookgadi.com/thank-you', // optional thank-you page
+        callback_method: 'get',
+        notes: { source: 'BookGadi Taxi Booking' }
+      })
+    });
+
+    if (!response.ok) throw new Error('Razorpay error: ' + response.status);
+
+    const data = await response.json();
+    return data.short_url || data.url; // short_url is preferred (rzp.io/...)
+  } catch (err) {
+    console.error('Payment link error:', err);
+    alert('UPI link bana nahi paya. Direct WhatsApp se book karein ya call karein.');
+    return null;
+  }
+}
+
 function initMap(){
   document.getElementById('rideDate').valueAsDate = new Date();
   geocoder = new google.maps.Geocoder();
   directionsService = new google.maps.DirectionsService();
   directionsRenderer = new google.maps.DirectionsRenderer({ polylineOptions: { strokeColor: "#1a73e8", strokeWeight: 5 } });
   map = new google.maps.Map(document.getElementById("map"),{
-    center:{lat:26.8467, lng:80.9462}, // Lucknow default
+    center:{lat:26.8467, lng:80.9462}, // Lucknow
     zoom:10,
     zoomControl: true,
     fullscreenControl: true,
@@ -189,8 +229,7 @@ function useMyLocation(){
     geocoder.geocode({ location: latlng }, (results, status) => {
       if (status === "OK" && results[0]) {
         document.getElementById("pickup").value = results[0].formatted_address;
-        map.setCenter(latlng);
-        map.setZoom(15);
+        map.setCenter(latlng); map.setZoom(15);
         btn.innerText = "✅ Location Set";
       } else {
         btn.innerText = "📍 Retry";
@@ -241,7 +280,7 @@ function updateUI(){
       <b>Distance:</b> ${lastKm.toFixed(1)} km<br>
       <b>Estimated Fare:</b> <span id="finalFare" style="font-size:22px; color:var(--primary)">₹${fare}</span>
       <div class="info-note">
-        ⚠️ Toll, State Tax, Parking aur Driver allowance alag se dena hoga.
+        ⚠️ Toll, State Tax, Parking aur Driver allowance alag se. UPI se advance pay karein.
       </div>
     </div>`;
 
@@ -253,7 +292,7 @@ function openBooking(){
   document.getElementById("waBtn").style.display = "none";
 }
 
-function sendWhatsApp(){
+async function sendWhatsApp(){
   const name      = document.getElementById("custName").value.trim();
   const phone     = document.getElementById("custPhone").value.trim();
   const date      = document.getElementById("rideDate").value;
@@ -269,25 +308,39 @@ function sendWhatsApp(){
     return;
   }
 
-  // Fix for + in Plus Codes: replace + with %2B BEFORE encoding the URL parts
+  const amount = parseFloat(fareVal.replace('₹', '').trim());
+
+  // Fix Plus Codes if any
   pickupVal = pickupVal.replace(/\+/g, '%2B');
   dropVal   = dropVal.replace(/\+/g, '%2B');
 
   const routeLink = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(pickupVal)}&destination=${encodeURIComponent(dropVal)}&travelmode=driving`;
 
-  // Concise + double line breaks for better spacing + bold where useful
-  const msg = `*BookGadi Booking*\n\n` +
-              `🚗 *${vehicle} | ${tripType}*\n` +
-              `👤 ${name} | ${phone}\n` +
-              `🗓️ ${date} ${time}\n` +
-              `💰 *${fareVal}*\n\n` +
-              `Pickup: ${pickupVal}\n` +
-              `Drop: ${dropVal}\n` +
-              `Route: ${routeLink}`;
+  // Create Razorpay UPI Payment Link
+  const paymentLink = await createPaymentLink(
+    amount,
+    name,
+    phone,
+    `BookGadi: ${vehicle} ${tripType} - ${pickupVal} to ${dropVal} on ${date} ${time}`
+  );
 
-  // Double-encode the FULL message to preserve %0A / %0A%0A and special chars
+  let msg = `*BookGadi Booking*\n\n` +
+            `🚗 *${vehicle} | ${tripType}*\n` +
+            `👤 ${name} | ${phone}\n` +
+            `🗓️ ${date} ${time}\n` +
+            `💰 *${fareVal}*\n\n` +
+            `Pickup: ${pickupVal}\n` +
+            `Drop: ${dropVal}\n` +
+            `Route: ${routeLink}\n\n`;
+
+  if (paymentLink) {
+    msg += `🔗 *UPI se Abhi Pay Karein:* ${paymentLink}\n` +
+           `(Advance ya full – payment confirm hone ke baad driver details bhej denge)`;
+  } else {
+    msg += `Payment link issue – call karein ya WhatsApp reply karein`;
+  }
+
   const encodedMsg = encodeURIComponent(msg);
-
   window.open(`https://wa.me/919651191446?text=${encodedMsg}`, "_blank");
 }
 </script>
