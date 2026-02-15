@@ -220,13 +220,42 @@ function calculateFare(){
 function openBooking(){ document.getElementById("userForm").style.display = "block"; document.getElementById("waBtn").style.display = "none"; }
 
 function sendWhatsApp(){
-    const n = document.getElementById("custName").value;
-    const p = document.getElementById("custPhone").value;
-    const f = document.getElementById("finalFare").innerText;
-    if(!n || p.length<10) return alert("Sahi details bharein");
-    
-    const msg = `*BookGadi Booking*\nName: ${n}\nPhone: ${p}\nFare: ${f}\nPickup: ${document.getElementById("pickup").value}\nDrop: ${document.getElementById("drop").value}`;
-    window.open(`https://wa.me/919651191446?text=${encodeURIComponent(msg)}`, "_blank");
+  const name      = document.getElementById("custName").value.trim();
+  const phone     = document.getElementById("custPhone").value.trim();
+  const date      = document.getElementById("rideDate").value;
+  const time      = document.getElementById("rideTime").value;
+  const vehicle   = document.getElementById("vehicle").options[document.getElementById("vehicle").selectedIndex].text;
+  const tripType  = document.getElementById("roundtrip").checked ? "Round Trip" : "One Way";
+  const pickupVal = document.getElementById("pickup").value.trim();
+  const dropVal   = document.getElementById("drop").value.trim();
+  const fareElement = document.getElementById("finalFare");
+
+  if(!name || !phone || phone.length < 10 || !date || !time || !pickupVal || !dropVal || !fareElement) {
+    alert("कृपया सभी जानकारी सही से भरें");
+    return;
+  }
+
+  const fareVal = fareElement.innerText;
+
+  // Google Maps Navigation Link बनाना (यही वो हिस्सा है जो ठीक किया गया है)
+  const encodedPickup = encodeURIComponent(pickupVal);
+  const encodedDrop = encodeURIComponent(dropVal);
+  const routeLink = `https://www.google.com/maps/dir/?api=1&origin=${encodedPickup}&destination=${encodedDrop}&travelmode=driving`;
+
+  // WhatsApp मेसेज का फॉर्मेट
+  const msg = `*BookGadi New Booking*\n\n` +
+              `🚗 *Vehicle:* ${vehicle}\n` +
+              `↕️ *Trip:* ${tripType}\n` +
+              `👤 *Customer:* ${name}\n` +
+              `📞 *Phone:* ${phone}\n` +
+              `📅 *Date/Time:* ${date} | ${time}\n` +
+              `💰 *Estimated Fare:* ${fareVal}\n\n` +
+              `📍 *Pickup:* ${pickupVal}\n` +
+              `🏁 *Drop:* ${dropVal}\n\n` +
+              `🗺️ *Navigate Route:* ${routeLink}`;
+
+  const encodedMsg = encodeURIComponent(msg);
+  window.open(`https://wa.me/919651191446?text=${encodedMsg}`, "_blank");
 }
 </script>
 
