@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>BookGadi Admin - Live Drivers</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f4f4f4; }
+        .driver-card { background: white; padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 5px solid #28a745; display: flex; justify-content: space-between; align-items: center; }
+        .online-dot { color: #28a745; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h2>Live Online Drivers</h2>
+    <div id="driverList">Loading...</div>
+
+    <script>
+        const config = { databaseURL: "https://bookgadi-97c98-default-rtdb.firebaseio.com" };
+        firebase.initializeApp(config);
+        const db = firebase.database();
+
+        db.ref('live_cars').on('value', (snapshot) => {
+            const data = snapshot.val();
+            const listDiv = document.getElementById('driverList');
+            listDiv.innerHTML = ""; // Clear list
+
+            if (!data) {
+                listDiv.innerHTML = "<p>Koi bhi driver online nahi hai.</p>";
+                return;
+            }
+
+            Object.keys(data).forEach(id => {
+                const driver = data[id];
+                listDiv.innerHTML += `
+                    <div class="driver-card">
+                        <div>
+                            <strong>${driver.driverName || 'Unknown'}</strong><br>
+                            <small>ID: ${id}</small>
+                        </div>
+                        <div class="online-dot">🟢 ONLINE</div>
+                    </div>
+                `;
+            });
+        });
+    </script>
+</body>
+</html>
