@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>BookGadi Driver App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+</head>
+<body style="text-align:center; padding-top:50px; font-family:sans-serif;">
+    <h2>BookGadi Driver Panel</h2>
+    <p id="msg">Duty is Offline</p>
+    <button onclick="startLive()" style="padding:20px; background:green; color:white; border-radius:10px;">Go Online / Start Duty</button>
+
+    <script>
+        const firebaseConfig = {
+            databaseURL: "https://bookgadi-97c98-default-rtdb.firebaseio.com",
+            projectId: "bookgadi-97c98",
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function startLive() {
+            if (navigator.geolocation) {
+                document.getElementById('msg').innerText = "Working... Your car is LIVE now!";
+                navigator.geolocation.watchPosition((position) => {
+                    db.ref('live_cars/car_01').set({
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude,
+                        time: Date.now()
+                    });
+                }, null, { enableHighAccuracy: true });
+            }
+        }
+    </script>
+</body>
+</html>
