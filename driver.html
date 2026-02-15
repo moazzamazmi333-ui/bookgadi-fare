@@ -46,6 +46,7 @@
         var db = firebase.database();
 
         var watchId = null;
+        var currentDriverId = ""; // आईडी स्टोर करने के लिए वेरिएबल
 
         function checkAndStart() {
             var inputID = document.getElementById('driverInputID').value.trim();
@@ -57,9 +58,9 @@
                 return;
             }
 
-            // 1. Check if ID exists in Firebase (Admin must create this first)
             db.ref('live_cars/' + inputID).once('value').then((snapshot) => {
                 if (snapshot.exists()) {
+                    currentDriverId = inputID; // यहाँ आईडी सेव हो गई
                     var driverData = snapshot.val();
                     startTracking(inputID, driverData.name);
                 } else {
@@ -72,14 +73,12 @@
 
         function startTracking(id, name) {
             if (navigator.geolocation) {
-                // UI Change
                 document.getElementById('loginSection').style.display = "none";
                 document.getElementById('statusSection').style.display = "block";
                 document.getElementById('welcomeName').innerText = name;
                 document.getElementById('displayID').innerText = "ID: " + id;
                 document.getElementById('log').innerText = "";
 
-                // Start Live GPS Tracking
                 watchId = navigator.geolocation.watchPosition(function(position) {
                     db.ref('live_cars/' + id).update({
                         lat: position.coords.latitude,
@@ -88,7 +87,7 @@
                         status: "online"
                     });
                 }, function(error) {
-                    alert("GPS Error! Phone settings में location ON करें।");
+                    console.log("GPS Error: ", error);
                 }, { enableHighAccuracy: true });
 
             } else {
@@ -97,15 +96,22 @@
         }
 
         function stopDuty() {
-            var id = document.getElementById('displayID').innerText.replace("ID: ", "");
-            if(watchId) navigator.geolocation.clearWatch(watchId);
+            if (watchId) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
             
-            // Duty off hone par data delete nahi hoga, bas status badal jayega (ya remove bhi kar sakte hain)
-            db.ref('live_cars/' + id).update({
-                status: "offline"
-            }).then(() => {
+            if (currentDriverId !== "") {
+                // डेटाबेस से हटाने के लिए remove() का उपयोग करें ताकि मैप से कार हट जाए
+                db.ref('live_cars/' + currentDriverId).remove().then(() => {
+                    alert("Aap Offline ho gaye hain.");
+                    location.reload();
+                }).catch((err) => {
+                    alert("Error: " + err.message);
+                });
+            } else {
                 location.reload();
-            });
+            }
         }
     </script>
 </body>
