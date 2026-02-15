@@ -2,7 +2,7 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <title>BookGadi Admin - Secure Access</title>
+    <title>BookGadi Admin - Full Access</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -32,8 +32,8 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: 0.2s;
         }
         .driver-card:hover { background: #f0f7ff; transform: translateY(-2px); }
-        .status-online { color: #28a745; font-size: 11px; font-weight: bold; display: flex; align-items: center; }
-        .dot { height: 8px; width: 8px; background: #28a745; border-radius: 50%; margin-right: 5px; }
+        .status-badge { font-size: 11px; font-weight: bold; display: flex; align-items: center; margin-top: 5px; }
+        .dot { height: 8px; width: 8px; border-radius: 50%; margin-right: 5px; }
         .delete-btn { color: #ff4d4d; border: none; background: none; cursor: pointer; font-size: 18px; padding: 0 10px; }
     </style>
 </head>
@@ -41,7 +41,7 @@
 
     <div id="loginOverlay">
         <div class="login-box">
-            <img src="https://www.bookgadi.com/logo.png" width="120" onerror="this.src='https://via.placeholder.com/120x40?text=BookGadi'">
+            <h2 style="color:#1a73e8; margin-bottom:10px;">BookGadi</h2>
             <h3>Admin Panel</h3>
             <input type="password" id="adminPass" placeholder="पासवर्ड डालें">
             <button class="btn-login" onclick="checkPass()">Unlock Admin Access</button>
@@ -58,7 +58,7 @@
                 <h4>➕ नया ड्राइवर जोड़ें</h4>
                 <input type="text" id="newDriverID" class="small-input" placeholder="Driver ID (e.g. UP65-1234)">
                 <input type="text" id="newDriverName" class="small-input" placeholder="Driver Full Name">
-                <button class="btn-create" onclick="createNewDriver()">Create & Go Online</button>
+                <button class="btn-create" onclick="createNewDriver()">Create ID</button>
             </div>
             <div id="driverList">
                 <p style="text-align:center; color:#999; margin-top:20px;">ड्राइवर लोड हो रहे हैं...</p>
@@ -84,11 +84,7 @@
             if(pass === SECRET_PASSWORD) {
                 document.getElementById('loginOverlay').style.display = "none";
                 document.getElementById('adminUI').style.display = "flex";
-                if (typeof google !== 'undefined') {
-                    initMap();
-                } else {
-                    alert("Google Maps is still loading. Please wait 2 seconds.");
-                }
+                initMap();
             } else {
                 document.getElementById('err').innerText = "Wrong Password!";
             }
@@ -111,19 +107,17 @@
 
             db.ref('live_cars/' + id).set({
                 name: name,
-                lat: 26.8467, 
-                lng: 80.9462,
-                status: "online",
+                status: "offline", // डिफ़ॉल्ट ऑफलाइन रहेगा जब तक ड्राइवर लॉगिन न करे
                 last_updated: Date.now()
             }).then(() => {
-                alert("ड्राइवर " + name + " अब ऑनलाइन है!");
+                alert("ड्राइवर " + name + " की ID बन गई है!");
                 document.getElementById('newDriverID').value = "";
                 document.getElementById('newDriverName').value = "";
             });
         }
 
         function removeDriver(id) {
-            if(confirm("क्या आप इस ड्राइवर को हटाना चाहते हैं?")) {
+            if(confirm("क्या आप इस ड्राइवर को पूरी तरह हटाना चाहते हैं?")) {
                 db.ref('live_cars/' + id).remove();
             }
         }
@@ -135,62 +129,62 @@
                 listDiv.innerHTML = "";
 
                 if (!allCars) {
-                    listDiv.innerHTML = '<p style="text-align:center; padding:20px; color:#999;">कोई ड्राइवर ऑनलाइन नहीं है।</p>';
-                    for (let id in markers) markers[id].setMap(null);
-                    markers = {};
+                    listDiv.innerHTML = '<p style="text-align:center; padding:20px; color:#999;">कोई ID नहीं बनी है।</p>';
                     return;
                 }
 
                 Object.keys(allCars).forEach(id => {
                     const data = allCars[id];
+                    const isOnline = (data.status === "online");
+                    const dName = data.name || "Unknown";
+
+                    // Sidebar Card - अब ये हमेशा दिखेगा
+                    const card = document.createElement('div');
+                    card.className = 'driver-card';
+                    if(!isOnline) card.style.background = "#f9f9f9"; 
+
+                    card.innerHTML = `
+                        <div>
+                            <b>${dName}</b><br>
+                            <small style="color:#666;">ID: ${id}</small><br>
+                            <span class="status-badge" style="color: ${isOnline ? '#28a745' : '#999'}">
+                                <span class="dot" style="background: ${isOnline ? '#28a745' : '#999'}"></span> 
+                                ${isOnline ? 'Duty Online' : 'Duty Offline'}
+                            </span>
+                        </div>
+                        <button class="delete-btn" onclick="event.stopPropagation(); removeDriver('${id}')">×</button>
+                    `;
                     
-                    // --- केवल ऑनलाइन ड्राइवर दिखाएं ---
-                    if (data.status === "online" && data.lat) {
+                    card.onclick = () => { 
+                        if(isOnline && data.lat) {
+                            map.setCenter({ lat: data.lat, lng: data.lng }); 
+                            map.setZoom(15); 
+                        } else {
+                            alert(dName + " अभी ऑफलाइन है।");
+                        }
+                    };
+                    listDiv.appendChild(card);
+
+                    // मैप मार्कर लॉजिक
+                    if (isOnline && data.lat) {
                         const pos = { lat: data.lat, lng: data.lng };
-                        const dName = data.name || "Unknown";
-
-                        const card = document.createElement('div');
-                        card.className = 'driver-card';
-                        card.innerHTML = `
-                            <div>
-                                <b>${dName}</b><br>
-                                <small style="color:#666;">ID: ${id}</small><br>
-                                <span class="status-online"><span class="dot"></span> Online</span>
-                            </div>
-                            <button class="delete-btn" onclick="event.stopPropagation(); removeDriver('${id}')">×</button>
-                        `;
-                        card.onclick = () => { map.setCenter(pos); map.setZoom(15); };
-                        listDiv.appendChild(card);
-
                         if (!markers[id]) {
                             markers[id] = new google.maps.Marker({
-                                position: pos, 
-                                map: map, 
-                                label: { text: dName, fontSize: "12px", fontWeight: "bold", color: "#000" },
-                                icon: { 
-                                    url: "https://static.wixstatic.com/media/843689_497878e241e348adbd167a8cc7462f1b~mv2.png", 
-                                    scaledSize: new google.maps.Size(35, 35),
-                                    labelOrigin: new google.maps.Point(17, -10)
-                                }
-                            });
-                            markers[id].addListener("click", () => {
-                                infoWindow.setContent(`<b>${dName}</b><br>ID: ${id}`);
-                                infoWindow.open(map, markers[id]);
+                                position: pos, map: map, 
+                                label: { text: dName, fontSize: "12px", fontWeight: "bold" },
+                                icon: { url: "https://static.wixstatic.com/media/843689_497878e241e348adbd167a8cc7462f1b~mv2.png", scaledSize: new google.maps.Size(35, 35) }
                             });
                         } else {
                             markers[id].setPosition(pos);
-                            if(markers[id].getMap() === null) markers[id].setMap(map);
+                            markers[id].setMap(map);
                         }
                     } else {
-                        // ऑफलाइन ड्राइवर को मैप से हटाएं
-                        if(markers[id]) {
-                            markers[id].setMap(null);
-                        }
+                        if(markers[id]) markers[id].setMap(null);
                     }
                 });
             });
         }
     </script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8fFUPeGfUy8Wwh-mQ_d3fbGZzKBy7VwM" async defer></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8fFUPeGfUy8Wwh-mQ_d3fbGZzKBy7VwM"></script>
 </body>
 </html>
