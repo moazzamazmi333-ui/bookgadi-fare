@@ -46,7 +46,6 @@
         var db = firebase.database();
 
         var watchId = null;
-        var currentDriverId = ""; // आईडी स्टोर करने के लिए वेरिएबल
 
         function checkAndStart() {
             var inputID = document.getElementById('driverInputID').value.trim();
@@ -60,7 +59,8 @@
 
             db.ref('live_cars/' + inputID).once('value').then((snapshot) => {
                 if (snapshot.exists()) {
-                    currentDriverId = inputID; // यहाँ आईडी सेव हो गई
+                    // ID को ब्राउज़र की मेमोरी में सेव करें
+                    localStorage.setItem('activeDriverId', inputID);
                     var driverData = snapshot.val();
                     startTracking(inputID, driverData.name);
                 } else {
@@ -79,35 +79,44 @@
                 document.getElementById('displayID').innerText = "ID: " + id;
                 document.getElementById('log').innerText = "";
 
+                // GPS अपडेट शुरू करें
                 watchId = navigator.geolocation.watchPosition(function(position) {
                     db.ref('live_cars/' + id).update({
                         lat: position.coords.latitude,
                         lng: position.coords.longitude,
-                        last_updated: Date.now(),
-                        status: "online"
+                        status: "online",
+                        last_updated: Date.now()
                     });
                 }, function(error) {
-                    console.log("GPS Error: ", error);
+                    console.log("GPS Error");
                 }, { enableHighAccuracy: true });
 
-            } else {
-                alert("Aapka phone GPS support nahi karta.");
             }
         }
 
         function stopDuty() {
+            // मेमोरी से ID निकालें
+            var id = localStorage.getItem('activeDriverId');
+            
             if (watchId) {
                 navigator.geolocation.clearWatch(watchId);
-                watchId = null;
             }
-            
-            if (currentDriverId !== "") {
-                // डेटाबेस से हटाने के लिए remove() का उपयोग करें ताकि मैप से कार हट जाए
-                db.ref('live_cars/' + currentDriverId).remove().then(() => {
-                    alert("Aap Offline ho gaye hain.");
+
+            if (id) {
+                // ध्यान दें: यहाँ remove() नहीं update() कर रहे हैं 
+                // ताकि एडमिन द्वारा भरा गया नाम (Name) डिलीट न हो।
+                // मैप (bookgadi.com) पर फिल्टर लगा होगा जो केवल status: "online" दिखाएगा।
+                db.ref('live_cars/' + id).update({
+                    status: "offline",
+                    lat: null, // लोकेशन हटा दें ताकि मैप से कार गायब हो जाए
+                    lng: null
+                }).then(() => {
+                    localStorage.removeItem('activeDriverId');
+                    alert("Duty Offline Ho Gayi Hai.");
                     location.reload();
                 }).catch((err) => {
-                    alert("Error: " + err.message);
+                    // अगर अपडेट फेल हो तो सीधे रिलोड करें
+                    location.reload();
                 });
             } else {
                 location.reload();
