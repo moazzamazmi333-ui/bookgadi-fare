@@ -2,26 +2,37 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <title>BookGadi - Live Taxi Fare & Tracking</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BookGadi - Live Tracking & Fare</title>
+    
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
     <style>
-        /* आपका पुराना CSS यहाँ पेस्ट करें */
-        #map { height: 500px; width: 100%; border-radius: 15px; margin-bottom: 15px; }
-        /* ... बाकी स्टाइल ... */
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; background: #f0f2f5; }
+        #map { height: 500px; width: 100%; border-bottom: 5px solid #1a73e8; }
+        .container { padding: 20px; max-width: 600px; margin: auto; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-top: -50px; position: relative; z-index: 10; }
+        h2 { color: #1a73e8; text-align: center; margin-top: 0; }
+        .status-info { font-size: 14px; text-align: center; color: #666; margin-bottom: 15px; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <div id="map"></div>
-        <div class="content">
-            <button class="main-btn btn-calc" onclick="calculateFare()">Kiraaya Dekhein</button>
-            <div id="result"></div>
+
+    <div id="map"></div>
+
+    <div class="container">
+        <div class="card">
+            <h2>BookGadi Live Tracking</h2>
+            <p class="status-info" id="carStatus">Checking for live cars...</p>
+            
+            <div id="fare-calculator">
+                </div>
         </div>
     </div>
 
     <script>
-        // Firebase Configuration
+        // 1. Firebase Configuration
         const firebaseConfig = {
             databaseURL: "https://bookgadi-97c98-default-rtdb.firebaseio.com",
             projectId: "bookgadi-97c98"
@@ -29,61 +40,80 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let map, directionsService, directionsRenderer, carMarker;
+        let map;
+        let markers = {}; // सभी ऑनलाइन कारों के लिए
 
+        // 2. Initialize Google Map
         function initMap() {
-            directionsService = new google.maps.DirectionsService();
-            directionsRenderer = new google.maps.DirectionsRenderer({ 
-                suppressMarkers: true, // डिफ़ॉल्ट मार्कर हटाकर कार दिखाने के लिए
-                polylineOptions: { strokeColor: "#1a73e8", strokeWeight: 5 }
+            // Lucknow और Azamgarh के बीच का सेंटर
+            const centerPoint = { lat: 26.5000, lng: 82.1000 };
+            
+            map = new google.maps.Map(document.getElementById("map"), {
+                zoom: 8,
+                center: centerPoint,
+                mapTypeControl: false,
+                streetViewControl: false
             });
 
-            map = new google.maps.Map(document.getElementById("map"), {
-                center: { lat: 26.3, lng: 81.1 }, // Lucknow
-                zoom: 8
-            });
-            directionsRenderer.setMap(map);
-            
-            // लाइव कार ट्रैकिंग शुरू करें
-            trackLiveCar();
+            // मैप लोड होते ही कारों को ट्रैक करना शुरू करें
+            trackAllCars();
         }
 
-        function trackLiveCar() {
-    const carRef = db.ref('live_cars/car_01');
-    
-    carRef.on('value', (snapshot) => {
-        const data = snapshot.val();
-        
-        if (data) {
-            // अगर डेटा है, तो कार दिखाओ या उसकी जगह बदलो
-            const pos = { lat: data.lat, lng: data.lng };
-            
-            if (!carMarker) {
-                carMarker = new google.maps.Marker({
-                    position: pos,
-                    map: map,
-                    icon: {
-                        url: "https://cdn-icons-png.flaticon.com/512/3082/3082383.png",
-                        scaledSize: new google.maps.Size(45, 45),
-                        anchor: new google.maps.Point(22, 22)
+        // 3. Live Tracking Logic
+        function trackAllCars() {
+            const carsRef = db.ref('live_cars');
+
+            carsRef.on('value', (snapshot) => {
+                const allCars = snapshot.val();
+                
+                // अगर कोई भी कार ऑनलाइन नहीं है
+                if (!allCars) {
+                    document.getElementById('carStatus').innerText = "Abhi koi car online nahi hai.";
+                    // पुराने सभी मार्कर हटा दें
+                    for (let id in markers) {
+                        markers[id].setMap(null);
+                    }
+                    markers = {};
+                    return;
+                }
+
+                document.getElementById('carStatus').innerText = "Live cars on road: " + Object.keys(allCars).length;
+
+                // ऑफलाइन हुई कारों को मैप से हटाना
+                for (let id in markers) {
+                    if (!allCars[id]) {
+                        markers[id].setMap(null);
+                        delete markers[id];
+                    }
+                }
+
+                // ऑनलाइन कारों को दिखाना या अपडेट करना
+                Object.keys(allCars).forEach(id => {
+                    const data = allCars[id];
+                    const pos = { lat: data.lat, lng: data.lng };
+
+                    if (!markers[id]) {
+                        // नई कार का मार्कर बनाएँ
+                        markers[id] = new google.maps.Marker({
+                            position: pos,
+                            map: map,
+                            title: data.driverName || "BookGadi Car",
+                            icon: {
+                                url: "https://cdn-icons-png.flaticon.com/512/3082/3082383.png", // Real Car Icon
+                                scaledSize: new google.maps.Size(40, 40),
+                                anchor: new google.maps.Point(20, 20)
+                            }
+                        });
+                    } else {
+                        // कार की लोकेशन अपडेट करें
+                        markers[id].setPosition(pos);
                     }
                 });
-            } else {
-                carMarker.setMap(map); // पक्का करें कि मार्कर दिख रहा है
-                carMarker.setPosition(pos);
-            }
-        } else {
-            // अगर डेटा नहीं है (Duty Offline), तो मार्कर को मैप से गायब कर दो
-            if (carMarker) {
-                carMarker.setMap(null); 
-                carMarker = null; // मार्कर को पूरी तरह रीसेट करें
-            }
+            });
         }
-    });
-}
-
-        // आपका पुराना calculateFare() फंक्शन यहाँ जोड़ें
     </script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8fFUPeGfUy8Wwh-mQ_d3fbGZzKBy7VwM&libraries=places&callback=initMap" async defer></script>
+
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_ACTUAL_GOOGLE_MAPS_KEY&callback=initMap" async defer></script>
+
 </body>
 </html>
