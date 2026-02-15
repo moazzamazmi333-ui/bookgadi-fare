@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <title>BookGadi - Live Taxi Fare & Tracking</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        /* आपका पुराना CSS यहाँ पेस्ट करें */
+        #map { height: 400px; width: 100%; border-radius: 15px; margin-bottom: 15px; }
+        /* ... बाकी स्टाइल ... */
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div id="map"></div>
+        <div class="content">
+            <button class="main-btn btn-calc" onclick="calculateFare()">Kiraaya Dekhein</button>
+            <div id="result"></div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            databaseURL: "https://bookgadi-97c98-default-rtdb.firebaseio.com",
+            projectId: "bookgadi-97c98"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let map, directionsService, directionsRenderer, carMarker;
+
+        function initMap() {
+            directionsService = new google.maps.DirectionsService();
+            directionsRenderer = new google.maps.DirectionsRenderer({ 
+                suppressMarkers: true, // डिफ़ॉल्ट मार्कर हटाकर कार दिखाने के लिए
+                polylineOptions: { strokeColor: "#1a73e8", strokeWeight: 5 }
+            });
+
+            map = new google.maps.Map(document.getElementById("map"), {
+                center: { lat: 26.8467, lng: 80.9462 }, // Lucknow
+                zoom: 12
+            });
+            directionsRenderer.setMap(map);
+            
+            // लाइव कार ट्रैकिंग शुरू करें
+            trackLiveCar();
+        }
+
+        function trackLiveCar() {
+            const carRef = db.ref('live_cars/car_01');
+            carRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    const pos = { lat: data.lat, lng: data.lng };
+                    
+                    if (!carMarker) {
+                        carMarker = new google.maps.Marker({
+                            position: pos,
+                            map: map,
+                            icon: {
+                                url: "https://cdn-icons-png.flaticon.com/512/3082/3082383.png", // Real Car Icon
+                                scaledSize: new google.maps.Size(45, 45),
+                                anchor: new google.maps.Point(22, 22)
+                            },
+                            optimized: false
+                        });
+                    } else {
+                        // स्मूथ मूवमेंट के लिए पोजीशन अपडेट
+                        carMarker.setPosition(pos);
+                    }
+                }
+            });
+        }
+
+        // आपका पुराना calculateFare() फंक्शन यहाँ जोड़ें
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8fFUPeGfUy8Wwh-mQ_d3fbGZzKBy7VwM&libraries=places&callback=initMap" async defer></script>
+</body>
+</html>
