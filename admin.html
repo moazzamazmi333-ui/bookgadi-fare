@@ -7,7 +7,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f4f7f6; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f4f7f6; overflow: hidden; }
         
         /* Login Overlay */
         #loginOverlay {
@@ -15,34 +15,47 @@
             background: #1a73e8; display: flex; justify-content: center; align-items: center;
             z-index: 9999; color: white;
         }
-        .login-box { background: white; padding: 30px; border-radius: 15px; color: #333; text-align: center; width: 300px; }
-        input { width: 100%; padding: 12px; margin: 15px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .login-box { background: white; padding: 30px; border-radius: 15px; color: #333; text-align: center; width: 320px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
         .btn-login { background: #28a745; color: white; border: none; width: 100%; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; }
 
         /* Main Admin UI */
         #adminUI { display: none; flex-direction: row; height: 100vh; width: 100%; }
-        #sidebar { width: 350px; background: white; border-right: 1px solid #ddd; display: flex; flex-direction: column; }
+        
+        /* Sidebar Styles */
+        #sidebar { width: 380px; background: white; border-right: 1px solid #ddd; display: flex; flex-direction: column; }
         .sidebar-header { padding: 20px; background: #1a73e8; color: white; text-align: center; }
-        #driverList { flex: 1; overflow-y: auto; padding: 10px; }
+        
+        /* Create Driver Form */
+        .add-driver-section { padding: 15px; background: #f9f9f9; border-bottom: 2px solid #eee; }
+        .add-driver-section h4 { margin: 0 0 10px 0; color: #1a73e8; font-size: 14px; }
+        .small-input { padding: 8px; font-size: 13px; margin: 5px 0; }
+        .btn-create { background: #1a73e8; color: white; border: none; width: 100%; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 5px; }
+
+        #driverList { flex: 1; overflow-y: auto; padding: 15px; background: #fff; }
         #map { flex: 1; height: 100%; }
 
+        /* Driver Card Styles */
         .driver-card { 
-            padding: 15px; margin-bottom: 10px; border-radius: 10px; 
+            padding: 12px; margin-bottom: 12px; border-radius: 10px; 
             background: #fff; border: 1px solid #eee; cursor: pointer;
             display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: 0.2s;
         }
-        .driver-card:hover { background: #e8f0fe; }
-        .status-dot { width: 10px; height: 10px; background: #28a745; border-radius: 50%; }
+        .driver-card:hover { background: #f0f7ff; transform: translateY(-2px); }
+        .status-online { color: #28a745; font-size: 11px; font-weight: bold; display: flex; align-items: center; }
+        .dot { height: 8px; width: 8px; background: #28a745; border-radius: 50%; margin-right: 5px; }
+        .delete-btn { color: #ff4d4d; border: none; background: none; cursor: pointer; font-size: 18px; padding: 0 10px; }
     </style>
 </head>
 <body>
 
     <div id="loginOverlay">
         <div class="login-box">
-            <img src="https://www.bookgadi.com/logo.png" width="100">
-            <h3>Admin Access</h3>
-            <input type="password" id="adminPass" placeholder="Enter Admin Password">
-            <button class="btn-login" onclick="checkPass()">Unlock Panel</button>
+            <img src="https://www.bookgadi.com/logo.png" width="120" onerror="this.src='https://via.placeholder.com/120x40?text=BookGadi'">
+            <h3>Admin Panel</h3>
+            <input type="password" id="adminPass" placeholder="पासवर्ड डालें">
+            <button class="btn-login" onclick="checkPass()">Unlock Admin Access</button>
             <p id="err" style="color:red; font-size:12px; margin-top:10px;"></p>
         </div>
     </div>
@@ -50,15 +63,24 @@
     <div id="adminUI">
         <div id="sidebar">
             <div class="sidebar-header">
-                <strong>Live Fleet Tracker</strong>
+                <strong>BOOKGADI LIVE ADMIN</strong>
             </div>
-            <div id="driverList"></div>
+
+            <div class="add-driver-section">
+                <h4>➕ नया ड्राइवर जोड़ें</h4>
+                <input type="text" id="newDriverID" class="small-input" placeholder="Driver ID (e.g. UP65-1234)">
+                <input type="text" id="newDriverName" class="small-input" placeholder="Driver Full Name">
+                <button class="btn-create" onclick="createNewDriver()">Create & Go Online</button>
+            </div>
+
+            <div id="driverList">
+                <p style="text-align:center; color:#999; margin-top:20px;">ड्राइवर लोड हो रहे हैं...</p>
+            </div>
         </div>
         <div id="map"></div>
     </div>
 
     <script>
-        // अपना पासवर्ड यहाँ सेट करें
         const SECRET_PASSWORD = "9651191446"; 
 
         function checkPass() {
@@ -66,9 +88,9 @@
             if(pass === SECRET_PASSWORD) {
                 document.getElementById('loginOverlay').style.display = "none";
                 document.getElementById('adminUI').style.display = "flex";
-                initMap(); // पासवर्ड सही होने पर ही मैप लोड होगा
+                initMap();
             } else {
-                document.getElementById('err').innerText = "Wrong Password! Access Denied.";
+                document.getElementById('err').innerText = "Wrong Password!";
             }
         }
 
@@ -80,13 +102,47 @@
         const db = firebase.database();
 
         let map, markers = {};
+        let infoWindow;
 
         function initMap() {
+            infoWindow = new google.maps.InfoWindow();
             map = new google.maps.Map(document.getElementById("map"), {
-                zoom: 8,
-                center: { lat: 26.5000, lng: 82.1000 }
+                zoom: 7,
+                center: { lat: 26.8467, lng: 80.9462 },
+                styles: [{ "featureType": "poi", "stylers": [{ "visibility": "off" }] }]
             });
             startTracking();
+        }
+
+        // नया ड्राइवर क्रिएट करने का फंक्शन
+        function createNewDriver() {
+            const id = document.getElementById('newDriverID').value.trim();
+            const name = document.getElementById('newDriverName').value.trim();
+
+            if(!id || !name) {
+                alert("ID और नाम दोनों ज़रूरी हैं!");
+                return;
+            }
+
+            // डिफ़ॉल्ट लोकेशन (लखनऊ) पर ड्राइवर को ऑनलाइन करना
+            db.ref('live_cars/' + id).set({
+                name: name,
+                lat: 26.8467, 
+                lng: 80.9462,
+                status: "online",
+                last_updated: Date.now()
+            }).then(() => {
+                alert("ड्राइवर " + name + " अब ऑनलाइन है!");
+                document.getElementById('newDriverID').value = "";
+                document.getElementById('newDriverName').value = "";
+            });
+        }
+
+        // ड्राइवर को डिलीट (ऑफलाइन) करना
+        function removeDriver(id) {
+            if(confirm("क्या आप इस ड्राइवर को हटाना चाहते हैं?")) {
+                db.ref('live_cars/' + id).remove();
+            }
         }
 
         function startTracking() {
@@ -96,7 +152,7 @@
                 listDiv.innerHTML = "";
 
                 if (!allCars) {
-                    listDiv.innerHTML = '<p style="text-align:center; padding:20px; color:#999;">No drivers online.</p>';
+                    listDiv.innerHTML = '<p style="text-align:center; padding:20px; color:#999;">कोई ड्राइवर ऑनलाइन नहीं है।</p>';
                     for (let id in markers) markers[id].setMap(null);
                     markers = {};
                     return;
@@ -105,19 +161,38 @@
                 Object.keys(allCars).forEach(id => {
                     const data = allCars[id];
                     const pos = { lat: data.lat, lng: data.lng };
+                    const dName = data.name || "Unknown";
 
-                    // List Item
+                    // Sidebar Card
                     const card = document.createElement('div');
                     card.className = 'driver-card';
-                    card.innerHTML = `<div><b>${data.driverName}</b><br><small>${id}</small></div><div class="status-dot"></div>`;
-                    card.onclick = () => { map.setCenter(pos); map.setZoom(16); };
+                    card.innerHTML = `
+                        <div>
+                            <b>${dName}</b><br>
+                            <small style="color:#666;">ID: ${id}</small><br>
+                            <span class="status-online"><span class="dot"></span> Online</span>
+                        </div>
+                        <button class="delete-btn" onclick="event.stopPropagation(); removeDriver('${id}')">×</button>
+                    `;
+                    card.onclick = () => { map.setCenter(pos); map.setZoom(15); };
                     listDiv.appendChild(card);
 
-                    // Marker
+                    // Map Marker
                     if (!markers[id]) {
                         markers[id] = new google.maps.Marker({
-                            position: pos, map: map, label: data.driverName[0],
-                            icon: { url: "https://cdn-icons-png.flaticon.com/512/3082/3082383.png", scaledSize: new google.maps.Size(40, 40) }
+                            position: pos, 
+                            map: map, 
+                            label: { text: dName, fontSize: "12px", fontWeight: "bold", color: "#000" },
+                            icon: { 
+                                url: "https://static.wixstatic.com/media/843689_497878e241e348adbd167a8cc7462f1b~mv2.png", 
+                                scaledSize: new google.maps.Size(35, 35),
+                                labelOrigin: new google.maps.Point(17, -10)
+                            }
+                        });
+                        
+                        markers[id].addListener("click", () => {
+                            infoWindow.setContent(`<b>${dName}</b><br>ID: ${id}<br>Status: Online`);
+                            infoWindow.open(map, markers[id]);
                         });
                     } else {
                         markers[id].setPosition(pos);
