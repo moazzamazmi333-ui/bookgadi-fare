@@ -22,18 +22,16 @@ body {
     overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); margin-top: 0;
 }
 
-/* मैप डिजाइन - No Blue Lines, No Gaps */
 .map-wrapper { 
     position: relative; 
     width: 100%; 
     height: 450px; 
-    border: none; /* ब्लू लाइन हटा दी गई */
+    border: none; 
     margin: 0;
     padding: 0;
 }
 #map { height: 100%; width: 100%; }
 
-/* लाइव काउंटर - Top Left */
 .live-indicator {
     position: absolute; top: 12px; left: 12px; z-index: 10;
     background: white; padding: 6px 14px; border-radius: 20px;
@@ -43,7 +41,6 @@ body {
 .dot { height: 8px; width: 8px; background: #28a745; border-radius: 50%; margin-right: 8px; animation: pulse 1.5s infinite; }
 @keyframes pulse { 0% {transform: scale(0.9);} 70% {transform: scale(1.2);} 100% {transform: scale(0.9);} }
 
-/* मैप कंट्रोल्स - Top Right */
 .map-controls { position: absolute; top: 12px; right: 12px; z-index: 10; display: flex; flex-direction: column; gap: 8px; }
 .ctrl-btn {
     background: white; border: 1px solid #eee; width: 38px; height: 38px;
@@ -51,12 +48,11 @@ body {
     justify-content: center; font-size: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-/* कैलकुलेटर सेक्शन - Seamless Integration */
 .content { 
     padding: 25px 20px; 
     background: #ffffff;
     border-radius: 25px 25px 0 0;
-    margin-top: -25px; /* मैप के साथ जोड़ दिया गया */
+    margin-top: -25px; 
     position: relative;
     z-index: 5;
 }
@@ -130,7 +126,8 @@ const firebaseConfig = { databaseURL: "https://bookgadi-97c98-default-rtdb.fireb
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-let map, geocoder, pickupAC, dropAC, directionsRenderer, directionsService;
+// infoWindow यहाँ डिफाइन किया गया है
+let map, geocoder, pickupAC, dropAC, directionsRenderer, directionsService, infoWindow;
 let markers = {};
 const LKO = { lat: 26.8467, lng: 80.9462 };
 const AZM = { lat: 26.0739, lng: 83.1859 };
@@ -139,11 +136,11 @@ function initMap(){
     document.getElementById('rideDate').valueAsDate = new Date();
     geocoder = new google.maps.Geocoder();
     directionsService = new google.maps.DirectionsService();
+    infoWindow = new google.maps.InfoWindow(); // Init InfoWindow
     directionsRenderer = new google.maps.DirectionsRenderer({ 
         polylineOptions: { strokeColor: "#1a73e8", strokeWeight: 6, strokeOpacity: 0.8 } 
     });
     
-    // Standard Clear Theme
     const standardStyle = [
         { "featureType": "water", "stylers": [{ "color": "#e9e9e9" }] },
         { "featureType": "landscape", "stylers": [{ "color": "#f5f5f5" }] },
@@ -165,6 +162,7 @@ function initMap(){
     pickupAC = new google.maps.places.Autocomplete(document.getElementById("pickup"),{componentRestrictions:{country:"in"}});
     dropAC = new google.maps.places.Autocomplete(document.getElementById("drop"),{componentRestrictions:{country:"in"}});
     
+    useMyLocation(); 
     fitRoute();
     trackCars();
 }
@@ -190,31 +188,65 @@ function trackCars() {
             markers = {}; return; 
         }
         document.getElementById('carStatus').innerText = "Live: " + Object.keys(cars).length;
+        
         Object.keys(cars).forEach(id => {
-            const pos = { lat: cars[id].lat, lng: cars[id].lng };
+            const data = cars[id];
+            const pos = { lat: data.lat, lng: data.lng };
+            
+            // अगर नाम है तो वो दिखाओ, नहीं तो 'Driver' के साथ ID के आखरी 3 अक्षर दिखाओ
+            const driverName = data.name ? data.name : "Driver-" + id.slice(-3);
+
             if(!markers[id]) {
                 markers[id] = new google.maps.Marker({
-                    position: pos, map: map,
-                    icon: { url: "https://static.wixstatic.com/media/843689_497878e241e348adbd167a8cc7462f1b~mv2.png", scaledSize: new google.maps.Size(32,32) }
+                    position: pos, 
+                    map: map,
+                    label: { 
+                        text: driverName, 
+                        color: "black", 
+                        fontSize: "12px", 
+                        fontWeight: "bold" 
+                    },
+                    icon: { 
+                        url: "https://static.wixstatic.com/media/843689_497878e241e348adbd167a8cc7462f1b~mv2.png", 
+                        scaledSize: new google.maps.Size(32,32),
+                        labelOrigin: new google.maps.Point(16, -12) // नाम को आइकॉन से ऊपर रखने के लिए
+                    }
                 });
-            } else { markers[id].setPosition(pos); }
+
+                markers[id].addListener("click", () => {
+                    infoWindow.setContent(`
+                        <div style="padding:10px; min-width:150px;">
+                            <strong style="color:#1a73e8; font-size:14px;">BookGadi Partner</strong><br>
+                            <hr style="margin:5px 0; border:0; border-top:1px solid #eee;">
+                            <b>Name:</b> ${data.name || "Available"}<br>
+                            <b>ID:</b> ${id}<br>
+                            <span style="color:green;">● Active Now</span>
+                        </div>
+                    `);
+                    infoWindow.open(map, markers[id]);
+                });
+
+            } else { 
+                markers[id].setPosition(pos); 
+                // अगर ड्राइवर नाम बदलता है तो उसे अपडेट करें
+                markers[id].setLabel({ text: driverName, color: "black", fontSize: "12px", fontWeight: "bold" });
+            }
         });
     });
 }
 
 function useMyLocation(){
-    const btn = document.getElementById("locBtn");
-    btn.innerText = "⌛ Dhoondh rahe hain...";
-    navigator.geolocation.getCurrentPosition((pos) => {
-        const latlng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        geocoder.geocode({ location: latlng }, (results, status) => {
-            if (status === "OK" && results[0]) {
-                document.getElementById("pickup").value = results[0].formatted_address;
-                map.setCenter(latlng); map.setZoom(15);
-                btn.innerText = "✅ Location Set";
-            }
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition((pos) => {
+            const latlng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            geocoder.geocode({ location: latlng }, (results, status) => {
+                if (status === "OK" && results[0]) {
+                    document.getElementById("pickup").value = results[0].formatted_address;
+                    map.setCenter(latlng); map.setZoom(12);
+                }
+            });
         });
-    });
+    }
 }
 
 function calculateFare(){
@@ -225,14 +257,17 @@ function calculateFare(){
     directionsService.route({ origin: p, destination: d, travelMode: 'DRIVING' }, (res, status) => {
         if (status === 'OK') {
             directionsRenderer.setDirections(res);
-            const km = res.routes[0].legs[0].distance.value / 1000;
+            const leg = res.routes[0].legs[0];
+            const km = leg.distance.value / 1000;
+            const time = leg.duration.text; // ETA यहाँ से आ रहा है
             const rate = Number(document.getElementById("vehicle").value);
             const isRound = document.getElementById("roundtrip").checked;
             let fare = isRound ? Math.round(km * rate * 2 + 300) : Math.round(250 + km * rate);
             
             document.getElementById("result").innerHTML = `
                 <div class="fare-card">
-                    <b>Distance:</b> ${km.toFixed(1)} km | <b>Est. Fare:</b> <span id="finalFare" style="color:var(--primary); font-size:22px;">₹${fare}</span>
+                    <b>Distance:</b> ${km.toFixed(1)} km | <b>Time:</b> ${time}<br>
+                    <b>Est. Fare:</b> <span id="finalFare" style="color:var(--primary); font-size:22px;">₹${fare}</span>
                     <div class="info-note">⚠️ Toll, State Tax & Parking extra as per actual.</div>
                 </div>`;
             document.getElementById("waBtn").style.display = "block";
@@ -251,8 +286,7 @@ function sendWhatsApp(){
     
     if(!n || ph.length < 10) return alert("Sahi details bharein");
     
-    const rLink = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(p)}&destination=${encodeURIComponent(d)}&travelmode=driving`;
-    const msg = `*BookGadi Booking Request*\n\n👤 *Name:* ${n}\n📞 *Phone:* ${ph}\n💰 *Fare:* ${f}\n📍 *Pickup:* ${p}\n🏁 *Drop:* ${d}\n\n🗺️ *Route:* ${rLink}`;
+    const msg = `*BookGadi Booking Request*\n\n👤 *Name:* ${n}\n📞 *Phone:* ${ph}\n💰 *Fare:* ${f}\n📍 *Pickup:* ${p}\n🏁 *Drop:* ${d}`;
     
     window.open(`https://wa.me/919651191446?text=${encodeURIComponent(msg)}`, "_blank");
 }
