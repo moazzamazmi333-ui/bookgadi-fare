@@ -6,18 +6,24 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 50px; background: #fff; }
-        .status-box { margin: 20px; padding: 15px; border-radius: 10px; font-weight: bold; }
-        .btn-start { padding: 20px 40px; font-size: 20px; background: #28a745; color: white; border: none; border-radius: 50px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-        .online { background: #d4edda; color: #155724; }
-        .offline { background: #f8d7da; color: #721c24; }
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; padding: 30px; background: #f8f9fa; }
+        .status-box { margin: 20px auto; padding: 15px; width: 80%; border-radius: 12px; font-weight: bold; transition: 0.3s; }
+        .online { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .offline { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        
+        .btn { padding: 18px 35px; font-size: 18px; color: white; border: none; border-radius: 50px; cursor: pointer; width: 80%; margin: 10px 0; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .btn-start { background: #28a745; }
+        .btn-stop { background: #dc3545; display: none; } /* शुरू में छुपा हुआ */
     </style>
 </head>
 <body>
-    <img src="https://www.bookgadi.com/logo.png" width="150" alt="BookGadi">
+    <img src="https://www.bookgadi.com/logo.png" width="120" alt="BookGadi">
     <h2>Driver Control Panel</h2>
+    
     <div id="status" class="status-box offline">Duty is Offline</div>
-    <button class="btn-start" onclick="goOnline()">Go Online / Start Duty</button>
+    
+    <button id="startBtn" class="btn btn-start" onclick="goOnline()">Go Online / Start Duty</button>
+    <button id="stopBtn" class="btn btn-stop" onclick="goOffline()">Go Offline / Stop Duty</button>
 
     <script>
         const firebaseConfig = {
@@ -27,27 +33,46 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        let watchId = null; // लोकेशन ट्रैकिंग रोकने के लिए ID
+
         function goOnline() {
             if (navigator.geolocation) {
+                // UI अपडेट करें
                 document.getElementById('status').innerText = "You are LIVE now!";
                 document.getElementById('status').className = "status-box online";
-                
-                // हाई एक्यूरेसी के साथ लोकेशन ट्रैक करना
-                navigator.geolocation.watchPosition((pos) => {
+                document.getElementById('startBtn').style.display = "none";
+                document.getElementById('stopBtn').style.display = "inline-block";
+
+                // ट्रैकिंग शुरू करें
+                watchId = navigator.geolocation.watchPosition((pos) => {
                     db.ref('live_cars/car_01').set({
                         lat: pos.coords.latitude,
                         lng: pos.coords.longitude,
-                        heading: pos.coords.heading || 0, // गाड़ी की दिशा
-                        speed: pos.coords.speed || 0,
                         updated: Date.now()
                     });
                 }, (err) => {
-                    alert("GPS Permission Allow Karein!");
-                }, {
-                    enableHighAccuracy: true,
-                    maximumAge: 0
-                });
+                    alert("GPS Error: Permission allow karein!");
+                }, { enableHighAccuracy: true });
             }
+        }
+
+        function goOffline() {
+            // 1. ट्रैकिंग रोकें
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+
+            // 2. Firebase से लोकेशन डिलीट करें (ताकि कस्टमर को कार न दिखे)
+            db.ref('live_cars/car_01').remove();
+
+            // 3. UI अपडेट करें
+            document.getElementById('status').innerText = "Duty is Offline";
+            document.getElementById('status').className = "status-box offline";
+            document.getElementById('startBtn').style.display = "inline-block";
+            document.getElementById('stopBtn').style.display = "none";
+            
+            alert("Aap ab Offline hain.");
         }
     </script>
 </body>
