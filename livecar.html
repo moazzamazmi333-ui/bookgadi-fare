@@ -187,51 +187,64 @@ function trackCars() {
             for(let id in markers) markers[id].setMap(null);
             markers = {}; return; 
         }
-        document.getElementById('carStatus').innerText = "Live: " + Object.keys(cars).length;
-        
+
+        let onlineCount = 0; // ऑनलाइन ड्राइवर गिनने के लिए
+
         Object.keys(cars).forEach(id => {
             const data = cars[id];
-            const pos = { lat: data.lat, lng: data.lng };
             
-            // अगर नाम है तो वो दिखाओ, नहीं तो 'Driver' के साथ ID के आखरी 3 अक्षर दिखाओ
-            const driverName = data.name ? data.name : "Driver-" + id.slice(-3);
+            // केवल तभी दिखाएं जब ड्राइवर ऑनलाइन हो और लोकेशन मौजूद हो
+            if (data.status === "online" && data.lat && data.lng) {
+                onlineCount++;
+                const pos = { lat: data.lat, lng: data.lng };
+                const driverName = data.name ? data.name : "Driver-" + id.slice(-3);
 
-            if(!markers[id]) {
-                markers[id] = new google.maps.Marker({
-                    position: pos, 
-                    map: map,
-                    label: { 
-                        text: driverName, 
-                        color: "black", 
-                        fontSize: "12px", 
-                        fontWeight: "bold" 
-                    },
-                    icon: { 
-                        url: "https://static.wixstatic.com/media/843689_497878e241e348adbd167a8cc7462f1b~mv2.png", 
-                        scaledSize: new google.maps.Size(32,32),
-                        labelOrigin: new google.maps.Point(16, -12) // नाम को आइकॉन से ऊपर रखने के लिए
-                    }
-                });
+                if(!markers[id]) {
+                    markers[id] = new google.maps.Marker({
+                        position: pos, 
+                        map: map,
+                        label: { 
+                            text: driverName, 
+                            color: "black", 
+                            fontSize: "12px", 
+                            fontWeight: "bold" 
+                        },
+                        icon: { 
+                            url: "https://static.wixstatic.com/media/843689_497878e241e348adbd167a8cc7462f1b~mv2.png", 
+                            scaledSize: new google.maps.Size(32,32),
+                            labelOrigin: new google.maps.Point(16, -12)
+                        }
+                    });
 
-                markers[id].addListener("click", () => {
-                    infoWindow.setContent(`
-                        <div style="padding:10px; min-width:150px;">
-                            <strong style="color:#1a73e8; font-size:14px;">BookGadi Partner</strong><br>
-                            <hr style="margin:5px 0; border:0; border-top:1px solid #eee;">
-                            <b>Name:</b> ${data.name || "Available"}<br>
-                            <b>ID:</b> ${id}<br>
-                            <span style="color:green;">● Active Now</span>
-                        </div>
-                    `);
-                    infoWindow.open(map, markers[id]);
-                });
+                    markers[id].addListener("click", () => {
+                        infoWindow.setContent(`
+                            <div style="padding:10px; min-width:150px;">
+                                <strong style="color:#1a73e8; font-size:14px;">BookGadi Partner</strong><br>
+                                <hr style="margin:5px 0; border:0; border-top:1px solid #eee;">
+                                <b>Name:</b> ${data.name || "Available"}<br>
+                                <b>ID:</b> ${id}<br>
+                                <span style="color:green;">● Active Now</span>
+                            </div>
+                        `);
+                        infoWindow.open(map, markers[id]);
+                    });
 
-            } else { 
-                markers[id].setPosition(pos); 
-                // अगर ड्राइवर नाम बदलता है तो उसे अपडेट करें
-                markers[id].setLabel({ text: driverName, color: "black", fontSize: "12px", fontWeight: "bold" });
+                } else { 
+                    markers[id].setPosition(pos); 
+                    markers[id].setLabel({ text: driverName, color: "black", fontSize: "12px", fontWeight: "bold" });
+                    // अगर छुपा हुआ था तो वापस दिखाएं
+                    if (markers[id].getMap() === null) markers[id].setMap(map);
+                }
+            } else {
+                // अगर ड्राइवर ऑफलाइन है तो उसका आइकॉन मैप से हटा दें
+                if (markers[id]) {
+                    markers[id].setMap(null);
+                }
             }
         });
+
+        // केवल ऑनलाइन ड्राइवरों की संख्या दिखाएं
+        document.getElementById('carStatus').innerText = "Live: " + onlineCount;
     });
 }
 
