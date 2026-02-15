@@ -9,88 +9,59 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
     <style>
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 1px; background: #f0f2f5; }
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
         
-        /* मैप कंटेनर का डिजाइन */
+        /* मैप कंटेनर: Top, Left, Right 0px गैप */
         .map-wrapper {
             position: relative;
-            max-width: 900px;
-            margin: 5px;
-            height: 500px; /* फिक्स हाइट */
-            border: 1px solid #1a73e8; /* नीला बॉर्डर */
-            border-radius: 10px; /* घुमावदार कोने */
-            overflow: hidden;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 100%;
+            height: 500px;
+            border-bottom: 4px solid #1a73e8;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
 
-        #map { height: 500px; width: 100%; }
+        #map { height: 100%; width: 100%; }
 
-        /* छोटा लाइव काउंटर - ऊपर बाईं ओर */
+        /* लाइव काउंटर */
         .live-indicator {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            z-index: 10;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 5px 12px;
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            position: absolute; top: 10px; left: 10px; z-index: 10;
+            background: white; padding: 5px 12px; border-radius: 20px;
+            display: flex; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            border: 1px solid #1a73e8;
         }
 
-        .dot {
-            height: 8px;
-            width: 8px;
-            background-color: #28a745;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 6px;
-            animation: pulse 1.5s infinite;
+        .dot { height: 8px; width: 8px; background: #28a745; border-radius: 50%; margin-right: 6px; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% {transform: scale(0.9);} 70% {transform: scale(1.2);} 100% {transform: scale(0.9);} }
+
+        /* कंट्रोल बटन्स (Full Screen & Refresh) */
+        .map-controls {
+            position: absolute; top: 10px; right: 10px; z-index: 10;
+            display: flex; flex-direction: column; gap: 5px;
         }
 
-        @keyframes pulse {
-            0% { transform: scale(0.9); opacity: 0.7; }
-            70% { transform: scale(1.2); opacity: 1; }
-            100% { transform: scale(0.9); opacity: 0.7; }
+        .ctrl-btn {
+            background: white; border: 1px solid #ccc; width: 35px; height: 35px;
+            border-radius: 4px; cursor: pointer; display: flex; align-items: center;
+            justify-content: center; font-size: 18px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-
-        /* रिफ्रेश बटन - दाईं ओर नीचे */
-        .refresh-btn {
-            position: absolute;
-            bottom: 20px;
-            left: 10px;
-            z-index: 10;
-            background: #ffffff;
-            border: none;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            cursor: pointer;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            transition: 0.3s;
-        }
-        
-        .refresh-btn:hover { background: #f0f0f0; transform: rotate(180deg); }
+        .ctrl-btn:hover { background: #f9f9f9; }
 
         .count-text { font-size: 13px; font-weight: bold; color: #333; }
     </style>
 </head>
 <body>
 
-    <div class="map-wrapper">
+    <div class="map-wrapper" id="fullScreenContainer">
         <div class="live-indicator">
             <span class="dot"></span>
             <span class="count-text" id="carStatus">Live: 0</span>
         </div>
 
-        <button class="refresh-btn" onclick="location.reload()" title="Refresh Map">
-            🔄
-        </button>
+        <div class="map-controls">
+            <button class="ctrl-btn" onclick="toggleFullScreen()" title="Full Screen">⛶</button>
+            <button class="ctrl-btn" onclick="location.reload()" title="Refresh">🔄</button>
+            <button class="ctrl-btn" onclick="fitRoute()" title="Center View">📍</button>
+        </div>
 
         <div id="map"></div>
     </div>
@@ -106,39 +77,51 @@
         let map;
         let markers = {}; 
 
+        // Lucknow और Azamgarh के कोआर्डिनेट्स
+        const LUCKNOW = { lat: 26.8467, lng: 80.9462 };
+        const AZAMGARH = { lat: 26.0739, lng: 83.1859 };
+
         function initMap() {
             map = new google.maps.Map(document.getElementById("map"), {
                 zoom: 8,
-                center: { lat: 26.2000, lng: 82.1000 },
+                center: { lat: 26.5000, lng: 82.1000 },
                 mapTypeControl: false,
                 streetViewControl: false,
-                fullscreenControl: false,
-                styles: [
-                    { "featureType": "poi", "stylers": [{ "visibility": "off" }] }
-                ]
+                fullscreenControl: false // हमने अपना कस्टम बटन बनाया है
             });
+
+            // मैप लोड होते ही दोनों शहरों को फिट करें
+            fitRoute();
             trackAllCars();
         }
 
+        // मैप को हमेशा लखनऊ और आज़मगढ़ के बीच फिट रखने वाला फंक्शन
+        function fitRoute() {
+            const bounds = new google.maps.LatLngBounds();
+            bounds.extend(LUCKNOW);
+            bounds.extend(AZAMGARH);
+            map.fitBounds(bounds);
+        }
+
+        function toggleFullScreen() {
+            const elem = document.getElementById("fullScreenContainer");
+            if (!document.fullscreenElement) {
+                elem.requestFullscreen().catch(err => alert("Error: " + err.message));
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
         function trackAllCars() {
-            const carsRef = db.ref('live_cars');
-            carsRef.on('value', (snapshot) => {
+            db.ref('live_cars').on('value', (snapshot) => {
                 const allCars = snapshot.val();
                 if (!allCars) {
                     document.getElementById('carStatus').innerText = "Live: 0";
-                    for (let id in markers) { markers[id].setMap(null); }
-                    markers = {};
-                    return;
+                    for (let id in markers) markers[id].setMap(null);
+                    markers = {}; return;
                 }
 
                 document.getElementById('carStatus').innerText = "Live: " + Object.keys(allCars).length;
-
-                for (let id in markers) {
-                    if (!allCars[id]) {
-                        markers[id].setMap(null);
-                        delete markers[id];
-                    }
-                }
 
                 Object.keys(allCars).forEach(id => {
                     const data = allCars[id];
@@ -146,12 +129,10 @@
 
                     if (!markers[id]) {
                         markers[id] = new google.maps.Marker({
-                            position: pos,
-                            map: map,
+                            position: pos, map: map,
                             icon: {
                                 url: "https://cdn-icons-png.flaticon.com/512/3082/3082383.png",
-                                scaledSize: new google.maps.Size(35, 35),
-                                anchor: new google.maps.Point(17, 17)
+                                scaledSize: new google.maps.Size(35, 35)
                             }
                         });
                     } else {
@@ -161,8 +142,6 @@
             });
         }
     </script>
-
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8fFUPeGfUy8Wwh-mQ_d3fbGZzKBy7VwM&callback=initMap" async defer></script>
-
 </body>
 </html>
