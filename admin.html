@@ -1,47 +1,134 @@
 <!DOCTYPE html>
-<html>
+<html lang="hi">
 <head>
-    <title>BookGadi Admin - Live Drivers</title>
+    <meta charset="UTF-8">
+    <title>BookGadi Admin - Live Fleet Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        body { font-family: sans-serif; padding: 20px; background: #f4f4f4; }
-        .driver-card { background: white; padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 5px solid #28a745; display: flex; justify-content: space-between; align-items: center; }
-        .online-dot { color: #28a745; font-weight: bold; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; background: #f4f7f6; }
+        
+        /* Sidebar Styles */
+        #sidebar { width: 350px; background: white; border-right: 1px solid #ddd; display: flex; flex-direction: column; box-shadow: 2px 0 5px rgba(0,0,0,0.05); }
+        .sidebar-header { padding: 20px; background: #1a73e8; color: white; text-align: center; }
+        #driverList { flex: 1; overflow-y: auto; padding: 10px; }
+        
+        /* Map Styles */
+        #map { flex: 1; height: 100%; }
+
+        /* Driver Card Styles */
+        .driver-card { 
+            padding: 15px; margin-bottom: 10px; border-radius: 10px; 
+            background: #fff; border: 1px solid #eee; cursor: pointer;
+            transition: 0.3s; display: flex; justify-content: space-between; align-items: center;
+        }
+        .driver-card:hover { background: #e8f0fe; border-color: #1a73e8; }
+        .info h4 { margin: 0; color: #333; }
+        .info p { margin: 5px 0 0; font-size: 13px; color: #666; }
+        .status-dot { width: 10px; height: 10px; background: #28a745; border-radius: 50%; box-shadow: 0 0 5px #28a745; }
+        
+        .no-driver { text-align: center; padding: 20px; color: #999; }
     </style>
 </head>
 <body>
-    <h2>Live Online Drivers</h2>
-    <div id="driverList">Loading...</div>
+
+    <div id="sidebar">
+        <div class="sidebar-header">
+            <img src="https://www.bookgadi.com/logo.png" width="80" alt="Logo"><br>
+            <strong>Live Admin Panel</strong>
+        </div>
+        <div id="driverList">
+            <p class="no-driver">Checking for online drivers...</p>
+        </div>
+    </div>
+
+    <div id="map"></div>
 
     <script>
-        const config = { databaseURL: "https://bookgadi-97c98-default-rtdb.firebaseio.com" };
-        firebase.initializeApp(config);
+        // 1. Firebase Config
+        const firebaseConfig = {
+            databaseURL: "https://bookgadi-97c98-default-rtdb.firebaseio.com",
+            projectId: "bookgadi-97c98"
+        };
+        firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        db.ref('live_cars').on('value', (snapshot) => {
-            const data = snapshot.val();
-            const listDiv = document.getElementById('driverList');
-            listDiv.innerHTML = ""; // Clear list
+        let map;
+        let markers = {};
 
-            if (!data) {
-                listDiv.innerHTML = "<p>Koi bhi driver online nahi hai.</p>";
-                return;
-            }
-
-            Object.keys(data).forEach(id => {
-                const driver = data[id];
-                listDiv.innerHTML += `
-                    <div class="driver-card">
-                        <div>
-                            <strong>${driver.driverName || 'Unknown'}</strong><br>
-                            <small>ID: ${id}</small>
-                        </div>
-                        <div class="online-dot">🟢 ONLINE</div>
-                    </div>
-                `;
+        // 2. Map Initialize
+        function initMap() {
+            map = new google.maps.Map(document.getElementById("map"), {
+                zoom: 8,
+                center: { lat: 26.5000, lng: 82.1000 }, // Lucknow-Azamgarh Center
+                mapTypeControl: true
             });
-        });
+            startTracking();
+        }
+
+        // 3. Admin Tracking Logic
+        function startTracking() {
+            const carsRef = db.ref('live_cars');
+
+            carsRef.on('value', (snapshot) => {
+                const allCars = snapshot.val();
+                const listDiv = document.getElementById('driverList');
+                listDiv.innerHTML = ""; // Clear list
+
+                if (!allCars) {
+                    listDiv.innerHTML = '<p class="no-driver">Koi bhi driver online nahi hai.</p>';
+                    for (let id in markers) markers[id].setMap(null);
+                    markers = {};
+                    return;
+                }
+
+                // Loop through all online drivers
+                Object.keys(allCars).forEach(id => {
+                    const data = allCars[id];
+                    const pos = { lat: data.lat, lng: data.lng };
+
+                    // Add to Sidebar List
+                    const card = document.createElement('div');
+                    card.className = 'driver-card';
+                    card.innerHTML = `
+                        <div class="info">
+                            <h4>${data.driverName || 'Driver'}</h4>
+                            <p>Mob: ${id}</p>
+                        </div>
+                        <div class="status-dot"></div>
+                    `;
+                    card.onclick = () => { map.setCenter(pos); map.setZoom(15); };
+                    listDiv.appendChild(card);
+
+                    // Update Map Marker
+                    if (!markers[id]) {
+                        markers[id] = new google.maps.Marker({
+                            position: pos,
+                            map: map,
+                            label: data.driverName ? data.driverName[0] : "D",
+                            icon: {
+                                url: "https://cdn-icons-png.flaticon.com/512/3082/3082383.png",
+                                scaledSize: new google.maps.Size(40, 40)
+                            }
+                        });
+                    } else {
+                        markers[id].setPosition(pos);
+                    }
+                });
+
+                // Offline Cleanup
+                for (let id in markers) {
+                    if (!allCars[id]) {
+                        markers[id].setMap(null);
+                        delete markers[id];
+                    }
+                }
+            });
+        }
     </script>
+
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initMap" async defer></script>
+
 </body>
 </html>
