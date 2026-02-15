@@ -49,30 +49,38 @@
         }
 
         function trackLiveCar() {
-            const carRef = db.ref('live_cars/car_01');
-            carRef.on('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    const pos = { lat: data.lat, lng: data.lng };
-                    
-                    if (!carMarker) {
-                        carMarker = new google.maps.Marker({
-                            position: pos,
-                            map: map,
-                            icon: {
-                                url: "https://cdn-icons-png.flaticon.com/512/3082/3082383.png", // Real Car Icon
-                                scaledSize: new google.maps.Size(45, 45),
-                                anchor: new google.maps.Point(22, 22)
-                            },
-                            optimized: false
-                        });
-                    } else {
-                        // स्मूथ मूवमेंट के लिए पोजीशन अपडेट
-                        carMarker.setPosition(pos);
+    const carRef = db.ref('live_cars/car_01');
+    
+    carRef.on('value', (snapshot) => {
+        const data = snapshot.val();
+        
+        if (data) {
+            // अगर डेटा है, तो कार दिखाओ या उसकी जगह बदलो
+            const pos = { lat: data.lat, lng: data.lng };
+            
+            if (!carMarker) {
+                carMarker = new google.maps.Marker({
+                    position: pos,
+                    map: map,
+                    icon: {
+                        url: "https://cdn-icons-png.flaticon.com/512/3082/3082383.png",
+                        scaledSize: new google.maps.Size(45, 45),
+                        anchor: new google.maps.Point(22, 22)
                     }
-                }
-            });
+                });
+            } else {
+                carMarker.setMap(map); // पक्का करें कि मार्कर दिख रहा है
+                carMarker.setPosition(pos);
+            }
+        } else {
+            // अगर डेटा नहीं है (Duty Offline), तो मार्कर को मैप से गायब कर दो
+            if (carMarker) {
+                carMarker.setMap(null); 
+                carMarker = null; // मार्कर को पूरी तरह रीसेट करें
+            }
         }
+    });
+}
 
         // आपका पुराना calculateFare() फंक्शन यहाँ जोड़ें
     </script>
