@@ -9,48 +9,56 @@
     <style>
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f4f7f6; overflow: hidden; height: 100vh; }
         
-        /* Login Overlay */
+        /* Login Screen */
         #loginOverlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #1a73e8; display: flex; justify-content: center; align-items: center;
             z-index: 9999; color: white;
         }
-        .login-box { background: white; padding: 30px; border-radius: 15px; color: #333; text-align: center; width: 90%; max-width: 320px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .login-box { background: white; padding: 30px; border-radius: 15px; color: #333; text-align: center; width: 85%; max-width: 320px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
         input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
         .btn-login { background: #28a745; color: white; border: none; width: 100%; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; }
 
-        /* Main Admin UI - Responsive Flex */
+        /* Main UI */
         #adminUI { display: none; flex-direction: row; height: 100vh; width: 100%; }
         
-        #sidebar { width: 350px; background: white; border-right: 1px solid #ddd; display: flex; flex-direction: column; transition: 0.3s; }
+        #sidebar { width: 350px; background: white; border-right: 1px solid #ddd; display: flex; flex-direction: column; }
         
-        .sidebar-header { padding: 15px; background: #1a73e8; color: white; text-align: center; position: relative; }
-        .logout-link { color: #ffcccc; text-decoration: none; font-size: 12px; display: block; margin-top: 5px; cursor: pointer; }
+        /* Header & Logout Button */
+        .sidebar-header { 
+            padding: 15px; background: #1a73e8; color: white; 
+            display: flex; justify-content: space-between; align-items: center; 
+        }
+        .btn-logout { 
+            background: #ff4d4d; color: white; border: none; padding: 5px 10px; 
+            border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;
+        }
 
-        .add-driver-section { padding: 15px; background: #f9f9f9; border-bottom: 2px solid #eee; }
-        .add-driver-section h4 { margin: 0 0 10px 0; color: #1a73e8; font-size: 14px; }
-        .small-input { padding: 10px; font-size: 14px; margin: 5px 0; }
-        .btn-create { background: #1a73e8; color: white; border: none; width: 100%; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .add-driver-section { padding: 12px; background: #f9f9f9; border-bottom: 2px solid #eee; }
+        .add-driver-section h4 { margin: 0 0 8px 0; color: #1a73e8; font-size: 13px; }
+        .small-input { padding: 10px; font-size: 14px; margin: 4px 0; }
+        .btn-create { background: #1a73e8; color: white; border: none; width: 100%; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; }
 
         #driverList { flex: 1; overflow-y: auto; padding: 10px; background: #fff; }
         #map { flex: 1; height: 100%; }
 
+        /* Driver Cards */
         .driver-card { 
-            padding: 12px; margin-bottom: 10px; border-radius: 10px; 
+            padding: 10px; margin-bottom: 8px; border-radius: 8px; 
             background: #fff; border: 1px solid #eee; cursor: pointer;
             display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
-        .status-badge { font-size: 11px; font-weight: bold; display: flex; align-items: center; margin-top: 5px; }
-        .dot { height: 8px; width: 8px; border-radius: 50%; margin-right: 5px; }
-        .delete-btn { color: #ff4d4d; border: none; background: none; cursor: pointer; font-size: 22px; padding: 0 5px; }
+        .status-badge { font-size: 11px; font-weight: bold; display: flex; align-items: center; margin-top: 3px; }
+        .dot { height: 7px; width: 7px; border-radius: 50%; margin-right: 5px; }
+        .delete-btn { color: #ff4d4d; border: none; background: none; cursor: pointer; font-size: 20px; }
 
-        /* Mobile View - Stack Sidebar and Map */
+        /* Mobile Optimization */
         @media screen and (max-width: 768px) {
             #adminUI { flex-direction: column; }
-            #sidebar { width: 100%; height: 45%; border-right: none; border-bottom: 1px solid #ddd; }
-            #map { height: 55%; width: 100%; }
-            .login-box { width: 85%; }
+            #sidebar { width: 100%; height: 40%; border-right: none; }
+            #map { height: 60%; width: 100%; }
+            .sidebar-header { padding: 10px 15px; }
+            .add-driver-section h4 { font-size: 12px; }
         }
     </style>
 </head>
@@ -58,10 +66,10 @@
 
     <div id="loginOverlay">
         <div class="login-box">
-            <h2 style="color:#1a73e8; margin-bottom:10px;">BookGadi</h2>
-            <h3>Admin Panel</h3>
+            <h2 style="color:#1a73e8; margin-top:0;">BookGadi</h2>
+            <p style="margin-bottom:20px; font-size:14px;">Secure Admin Access</p>
             <input type="password" id="adminPass" placeholder="पासवर्ड डालें">
-            <button class="btn-login" onclick="checkPass()">Unlock Admin Access</button>
+            <button class="btn-login" onclick="checkPass()">Unlock Admin</button>
             <p id="err" style="color:red; font-size:12px; margin-top:10px;"></p>
         </div>
     </div>
@@ -69,17 +77,19 @@
     <div id="adminUI">
         <div id="sidebar">
             <div class="sidebar-header">
-                <strong>BOOKGADI LIVE ADMIN</strong>
-                <div class="logout-link" onclick="logout()">[ Logout & Lock ]</div>
+                <span style="font-weight:bold; font-size:14px;">BOOKGADI ADMIN</span>
+                <button class="btn-logout" onclick="logout()">LOGOUT</button>
             </div>
+            
             <div class="add-driver-section">
                 <h4>➕ नया ड्राइवर जोड़ें</h4>
-                <input type="text" id="newDriverID" class="small-input" placeholder="Driver ID (e.g. UP65-1234)">
-                <input type="text" id="newDriverName" class="small-input" placeholder="Driver Full Name">
+                <input type="text" id="newDriverID" class="small-input" placeholder="Driver ID (UP65-XXXX)">
+                <input type="text" id="newDriverName" class="small-input" placeholder="Driver Name">
                 <button class="btn-create" onclick="createNewDriver()">Create ID</button>
             </div>
+
             <div id="driverList">
-                <p style="text-align:center; color:#999; margin-top:20px;">लोड हो रहा है...</p>
+                <p style="text-align:center; color:#999; padding-top:20px;">लोड हो रहा है...</p>
             </div>
         </div>
         <div id="map"></div>
@@ -87,7 +97,6 @@
 
     <script>
         const SECRET_PASSWORD = "9651191446"; 
-
         const firebaseConfig = {
             databaseURL: "https://bookgadi-97c98-default-rtdb.firebaseio.com",
             projectId: "bookgadi-97c98"
@@ -98,8 +107,7 @@
         let map, markers = {}, infoWindow;
 
         function checkPass() {
-            const pass = document.getElementById('adminPass').value;
-            if(pass === SECRET_PASSWORD) {
+            if(document.getElementById('adminPass').value === SECRET_PASSWORD) {
                 document.getElementById('loginOverlay').style.display = "none";
                 document.getElementById('adminUI').style.display = "flex";
                 if (!map) initMap();
@@ -109,10 +117,8 @@
         }
 
         function logout() {
-            if(confirm("Logout करना चाहते हैं?")) {
-                document.getElementById('adminPass').value = "";
-                document.getElementById('adminUI').style.display = "none";
-                document.getElementById('loginOverlay').style.display = "flex";
+            if(confirm("क्या आप लॉगआउट करना चाहते हैं?")) {
+                location.reload(); // यह सबसे सुरक्षित तरीका है लॉगआउट करने का
             }
         }
 
@@ -121,8 +127,8 @@
             map = new google.maps.Map(document.getElementById("map"), {
                 zoom: 7,
                 center: { lat: 26.8467, lng: 80.9462 },
-                disableDefaultUI: false, // मोबाइल पर जूम बटन दिखाने के लिए
-                styles: [{ "featureType": "poi", "stylers": [{ "visibility": "off" }] }]
+                mapTypeControl: false,
+                streetViewControl: false
             });
             startTracking();
         }
@@ -130,23 +136,19 @@
         function createNewDriver() {
             const id = document.getElementById('newDriverID').value.trim();
             const name = document.getElementById('newDriverName').value.trim();
-            if(!id || !name) { alert("ID और नाम दोनों ज़रूरी हैं!"); return; }
+            if(!id || !name) { alert("ID और नाम भरें!"); return; }
 
             db.ref('live_cars/' + id).set({
-                name: name,
-                status: "offline",
-                last_updated: Date.now()
+                name: name, status: "offline", last_updated: Date.now()
             }).then(() => {
-                alert("ड्राइवर " + name + " की ID बन गई है!");
+                alert("Driver Created!");
                 document.getElementById('newDriverID').value = "";
                 document.getElementById('newDriverName').value = "";
             });
         }
 
         function removeDriver(id) {
-            if(confirm("क्या आप इस ड्राइवर को पूरी तरह हटाना चाहते हैं?")) {
-                db.ref('live_cars/' + id).remove();
-            }
+            if(confirm("हटाएं?")) db.ref('live_cars/' + id).remove();
         }
 
         function startTracking() {
@@ -154,44 +156,32 @@
                 const allCars = snapshot.val();
                 const listDiv = document.getElementById('driverList');
                 listDiv.innerHTML = "";
-
-                if (!allCars) {
-                    listDiv.innerHTML = '<p style="text-align:center; padding:20px; color:#999;">कोई ID नहीं मिली।</p>';
-                    return;
-                }
+                if (!allCars) { listDiv.innerHTML = '<p style="text-align:center; color:#999;">No Data</p>'; return; }
 
                 Object.keys(allCars).forEach(id => {
                     const data = allCars[id];
                     const isOnline = (data.status === "online");
-                    const dName = data.name || "Unknown";
-
                     const card = document.createElement('div');
                     card.className = 'driver-card';
-                    if(!isOnline) card.style.background = "#f9f9f9"; 
+                    if(!isOnline) card.style.opacity = "0.7";
 
                     card.innerHTML = `
                         <div>
-                            <b>${dName}</b><br>
-                            <small style="color:#666;">ID: ${id}</small><br>
-                            <span class="status-badge" style="color: ${isOnline ? '#28a745' : '#999'}">
-                                <span class="dot" style="background: ${isOnline ? '#28a745' : '#999'}"></span> 
+                            <b>${data.name || 'Unknown'}</b><br>
+                            <small>ID: ${id}</small><br>
+                            <span class="status-badge" style="color:${isOnline ? '#28a745' : '#999'}">
+                                <span class="dot" style="background:${isOnline ? '#28a745' : '#999'}"></span>
                                 ${isOnline ? 'Online' : 'Offline'}
                             </span>
                         </div>
                         <button class="delete-btn" onclick="event.stopPropagation(); removeDriver('${id}')">×</button>
                     `;
                     
-                    card.onclick = () => { 
+                    card.onclick = () => {
                         if(isOnline && data.lat) {
-                            map.setCenter({ lat: data.lat, lng: data.lng }); 
-                            map.setZoom(16); 
-                            // मोबाइल पर क्लिक के बाद थोड़ा स्क्रॉल मैप की तरफ करने के लिए (Optional)
-                            if(window.innerWidth < 768) {
-                                document.getElementById('map').scrollIntoView({behavior: "smooth"});
-                            }
-                        } else {
-                            alert(dName + " अभी ऑफलाइन है।");
-                        }
+                            map.setCenter({ lat: data.lat, lng: data.lng });
+                            map.setZoom(15);
+                        } else { alert("Offline"); }
                     };
                     listDiv.appendChild(card);
 
@@ -200,15 +190,15 @@
                         if (!markers[id]) {
                             markers[id] = new google.maps.Marker({
                                 position: pos, map: map, 
-                                label: { text: dName, fontSize: "12px", fontWeight: "bold" },
-                                icon: { url: "https://static.wixstatic.com/media/843689_497878e241e348adbd167a8cc7462f1b~mv2.png", scaledSize: new google.maps.Size(35, 35) }
+                                label: { text: data.name, fontSize: "12px", fontWeight: "bold" },
+                                icon: { url: "https://static.wixstatic.com/media/843689_497878e241e348adbd167a8cc7462f1b~mv2.png", scaledSize: new google.maps.Size(30,30) }
                             });
                         } else {
                             markers[id].setPosition(pos);
                             markers[id].setMap(map);
                         }
-                    } else {
-                        if(markers[id]) markers[id].setMap(null);
+                    } else if(markers[id]) {
+                        markers[id].setMap(null);
                     }
                 });
             });
