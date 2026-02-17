@@ -37,13 +37,15 @@
             <div class="online-tag">● ONLINE DUTY</div>
             <h4 id="dName" style="margin:5px 0;"></h4>
            
-            <label style="font-size: 12px; color: #666; display: block; text-align: left;">Filter Your City:</label>
-            <select id="cityFilter" onchange="applyFilter()">
-                <option value="ALL">Show All (सब देखें)</option>
-                <option value="AZAM">Azamgarh (Smart)</option>
-                <option value="LUCK">Lucknow</option>
-                <option value="VAR">Varanasi</option>
-            </select>
+            <label style="font-size: 12px; color: #666; display: block; text-align: left; margin-bottom: 8px;">
+                Filter Your City:
+                <select id="cityFilter" onchange="applyFilter()" style="margin-top: 6px;">
+                    <option value="ALL">Show All (सब देखें)</option>
+                    <option value="AZAM">Azamgarh (Smart)</option>
+                    <option value="LUCK">Lucknow</option>
+                    <option value="VAR">Varanasi</option>
+                </select>
+            </label>
         </div>
 
         <div id="bookingList">Loading bookings...</div>
@@ -112,10 +114,10 @@
 
         keys.forEach(k => {
             const b = allBookings[k];
-            const pickup = (b.pickup || "").toUpperCase().trim().replace(/\s+/g, ' '); // extra spaces remove
+            const pickup = (b.pickup || "").toUpperCase().trim().replace(/\s+/g, ' ');
 
-            // Debug: console mein pickup dikhao (baad mein comment out kar sakte ho)
-            console.log("Booking ID:", k, " | Pickup:", b.pickup, " | Upper cleaned:", pickup);
+            // Debug line – remove or comment after testing
+            // console.log("Pickup:", b.pickup, "→", pickup);
 
             let match = false;
 
@@ -123,16 +125,14 @@
                 match = true;
             } 
             else if (filter === "AZAM") {
-                // Bahut strong Azamgarh matching
                 const azamKeywords = [
                     "AZAM", "AZM", "AZA", "AMGARH", "AZAMGARH", "AZAM GARH", "AZAM-GARH",
-                    "AAZAM", "AJAM", "AZMGARH", "AZAMGAR", "AZAMGADH", "AJAMGARH", "AZAMGAD",
-                    "आजमगढ़", "अजमगढ़", "आज़मगढ़", "अज़मगढ़", "आजम गढ़", "अजम गढ़", "आजमगढ",
+                    "AAZAM", "AJAM", "AZMGARH", "AZAMGAR", "AZAMGADH", "AJAMGARH",
+                    "आजमगढ़", "अजमगढ़", "आज़मगढ़", "अज़मगढ़", "आजम गढ़", "अजम गढ़",
                     "PHOOLPUR", "MUHAMMADABAD", "MUBARAKPUR", "MEHNAGAR", "MARTINGANJ",
-                    "SADAR AZAM", "AZAMGARH SADAR", "AZAMGARH RS", "AZAMGARH BUS", "KOTWA", "SARAI MIR"
+                    "SADAR", "RS", "BUS STAND", "KOTWA", "SARAI MIR"
                 ];
 
-                // Simple keyword match
                 for (let kw of azamKeywords) {
                     if (pickup.includes(kw)) {
                         match = true;
@@ -140,9 +140,8 @@
                     }
                 }
 
-                // Extra smart: "GARH" + "AZ"/"AJ" combo
                 if (!match && pickup.includes("GARH") && 
-                    (pickup.includes("AZ") || pickup.includes("AJ") || pickup.includes("AAZ"))) {
+                    (pickup.includes("AZ") || pickup.includes("AJ") || pickup.includes("AA"))) {
                     match = true;
                 }
             } 
@@ -178,7 +177,7 @@
         });
 
         if (found === 0) {
-            list.innerHTML = `<div class='no-data'>No bookings found in this city.<br>(Check console for pickup names – share with me if still not showing)</div>`;
+            list.innerHTML = `<div class='no-data'>No matching bookings found.</div>`;
         }
     }
 
