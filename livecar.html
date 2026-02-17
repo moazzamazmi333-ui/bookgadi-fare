@@ -178,13 +178,6 @@ select { width: 100%; padding: 14px; border-radius: 12px; border: 1.5px solid #e
             <input id="driverID" class="input-box" placeholder="गाड़ी नंबर या ID">
             <button id="onlineBtn" class="main-btn btn-wa" onclick="toggleDriverOnline()">Go Online (Start Live)</button>
             
-            <div id="pipContainer" style="display:none; margin-top:10px;">
-                <canvas id="pipCanvas" width="300" height="150" style="display:none;"></canvas>
-                <button class="btn-loc" onclick="startPiP()" style="background:#34a853; color:white; margin-bottom:10px;">
-                    📱 Floating Mode (Home Screen)
-                </button>
-            </div>
-
             <hr style="margin: 15px 0; border: 0; border-top: 1px solid #ccc;">
             <h5 style="margin-bottom:10px;">New Bookings (Today)</h5>
             <div id="bookingList" class="booking-list">
@@ -209,7 +202,6 @@ const AZM = { lat: 26.0739, lng: 83.1859 };
 // Driver tracking variables
 let isOnline = false;
 let watchID = null;
-let pipVideo = null;
 
 function initMap(){
     document.getElementById('rideDate').valueAsDate = new Date();
@@ -245,6 +237,7 @@ function initMap(){
     fitRoute();
     trackCars();
     
+    // Initial State: Show message in driver list
     document.getElementById('bookingList').innerHTML = "<p style='text-align:center; font-size:12px; color:orange;'>बुकिंग देखने के लिए Online आएं</p>";
 }
 
@@ -262,41 +255,6 @@ function playBeep() {
         oscillator.start();
         oscillator.stop(audioCtx.currentTime + 0.5);
     } catch(e) { console.log("Audio play error", e); }
-}
-
-// --- Floating Mode Logic ---
-async function startPiP() {
-    const canvas = document.getElementById('pipCanvas');
-    const ctx = canvas.getContext('2d');
-    const dName = document.getElementById("driverName").value || "Driver";
-
-    function draw() {
-        ctx.fillStyle = "#1a73e8"; 
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "white";
-        ctx.font = "bold 24px Arial";
-        ctx.fillText("BookGadi LIVE", 20, 50);
-        ctx.font = "20px Arial";
-        ctx.fillText("Driver: " + dName, 20, 90);
-        ctx.fillStyle = "#25D366";
-        ctx.fillText("● Online & Active", 20, 130);
-        if(isOnline) requestAnimationFrame(draw);
-    }
-    draw();
-
-    const stream = canvas.captureStream();
-    if (!pipVideo) {
-        pipVideo = document.createElement('video');
-        pipVideo.muted = true;
-        pipVideo.srcObject = stream;
-        pipVideo.play();
-    }
-
-    try {
-        await pipVideo.requestPictureInPicture();
-    } catch (error) {
-        alert("Floating Mode Error: ब्राउज़र सपोर्ट नहीं करता।");
-    }
 }
 
 function fitRoute() {
@@ -351,6 +309,7 @@ function trackCars() {
     });
 }
 
+// --- Driver Platform Logic (Modified) ---
 function showDriverPanel() {
     document.getElementById("customerSection").style.display = "none";
     document.getElementById("driverPanel").style.display = "block";
@@ -359,6 +318,7 @@ function showDriverPanel() {
 function loadBookingsForDrivers() {
     if(!isOnline) return;
 
+    // Beep on new booking
     db.ref('bookings').limitToLast(1).on('child_added', (snapshot) => {
         const data = snapshot.val();
         if (data && data.timestamp && (Date.now() - data.timestamp < 10000)) {
@@ -366,6 +326,7 @@ function loadBookingsForDrivers() {
         }
     });
 
+    // Load list
     db.ref('bookings').limitToLast(10).on('value', (snap) => {
         const listDiv = document.getElementById('bookingList');
         const bookings = snap.val();
@@ -403,9 +364,8 @@ function toggleDriverOnline() {
         isOnline = true;
         document.getElementById("onlineBtn").innerText = "Stop Live (Go Offline)";
         document.getElementById("onlineBtn").style.background = "#ea4335";
-        document.getElementById("pipContainer").style.display = "block";
         
-        loadBookingsForDrivers();
+        loadBookingsForDrivers(); // Start loading bookings now
 
         if (navigator.geolocation) {
             watchID = navigator.geolocation.watchPosition((pos) => {
@@ -414,16 +374,15 @@ function toggleDriverOnline() {
                     status: "online", lastUpdate: Date.now()
                 });
             }, (err) => console.log(err), { enableHighAccuracy: true });
-            alert("आप ऑनलाइन हैं! बुकिंग आने पर आवाज़ आएगी।");
+            alert("आप ऑनलाइन हैं! बुकिंग आने पर आवाज़ आएगी।");
         }
     } else {
         isOnline = false;
         if(watchID) navigator.geolocation.clearWatch(watchID);
         db.ref('live_cars/' + dID).update({ status: "offline" });
-        db.ref('bookings').off();
+        db.ref('bookings').off(); // Stop listening
         document.getElementById("onlineBtn").innerText = "Go Online (Start Live)";
         document.getElementById("onlineBtn").style.background = "var(--success)";
-        document.getElementById("pipContainer").style.display = "none";
         document.getElementById('bookingList').innerHTML = "<p style='text-align:center; font-size:12px; color:orange;'>बुकिंग देखने के लिए Online आएं</p>";
         alert("आप ऑफलाइन हो गए हैं।");
     }
