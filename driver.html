@@ -11,18 +11,12 @@
         input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
         button { width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; font-size: 16px; transition: 0.3s; }
         .btn-go { background: #1a73e8; }
-        .btn-go:active { background: #0d47a1; }
         .btn-off { background: #dc3545; margin-top: 20px; padding: 10px; font-size: 14px; }
-        #log { color: #dc3545; font-size: 13px; margin-top: 15px; font-weight: bold; }
         .status-box { background: #e8f5e9; padding: 15px; border-radius: 10px; display: none; border: 1px solid #c8e6c9; }
         .pulse { height: 10px; width: 10px; background: #2e7d32; border-radius: 50%; display: inline-block; margin-right: 5px; animation: blink 1s infinite; }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
-
-        /* New Booking List Styles */
         #bookingSection { display: none; margin-top: 20px; text-align: left; }
-        .booking-card { background: #fff; border: 1px solid #eee; border-left: 4px solid #1a73e8; padding: 12px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .booking-card div { margin-bottom: 4px; font-size: 13px; color: #444; }
-        .booking-card b { color: #333; }
+        .booking-card { background: #fff; border: 1px solid #eee; border-left: 4px solid #1a73e8; padding: 12px; border-radius: 8px; margin-bottom: 10px; }
         .fare-tag { color: #1e8e3e; font-weight: bold; font-size: 15px; float: right; }
     </style>
 </head>
@@ -32,60 +26,74 @@
         <h3 style="color:#333; margin-top: 10px;">Driver Duty Panel</h3>
         
         <div id="loginSection">
-            <p style="font-size: 13px; color: #666;">Admin द्वारा दी गई ID से लॉगिन करें</p>
             <input type="text" id="driverInputID" placeholder="Enter Your Driver ID">
-            <button class="btn-go" onclick="checkAndStart()">Duty Start Karein</button>
+            <button class="btn-go" onclick="askPermissionAndStart()">Duty Start Karein</button>
         </div>
 
         <div id="statusSection" class="status-box">
             <p style="color:#2e7d32; margin: 0; font-weight: bold;"><span class="pulse"></span> Aap Online Hain</p>
-            <h4 id="welcomeName" style="margin: 10px 0; color: #1a73e8;"></h4>
-            <p id="displayID" style="font-size: 12px; color: #666;"></p>
+            <h4 id="welcomeName"></h4>
             
             <div id="bookingSection">
-                <p style="font-weight: bold; color: #333; border-bottom: 1px solid #eee; padding-bottom: 5px;">New Bookings:</p>
-                <div id="bookingList">
-                    <p style="font-size: 12px; color: #888; text-align: center;">Waiting for new jobs...</p>
-                </div>
+                <p style="font-weight: bold; color: #333;">New Bookings:</p>
+                <div id="bookingList"></div>
             </div>
 
             <button class="btn-off" onclick="stopDuty()">Duty Offline Karein</button>
         </div>
-        
-        <div id="log"></div>
+        <div id="log" style="color:red; font-size:12px; margin-top:10px;"></div>
     </div>
 
     <script>
-        const config = {
-            databaseURL: "https://bookgadi-97c98-default-rtdb.firebaseio.com",
-            projectId: "bookgadi-97c98"
-        };
+        const config = { databaseURL: "https://bookgadi-97c98-default-rtdb.firebaseio.com" };
         firebase.initializeApp(config);
         var db = firebase.database();
         var watchId = null;
+        var lastJobId = null;
 
-        window.onload = function() {
-            var savedID = localStorage.getItem('activeDriverId');
-            if (savedID) {
-                document.getElementById('log').innerText = "Auto-reconnecting...";
-                reconnectDriver(savedID);
+        // 1. Notification Permission mangna
+        function askPermissionAndStart() {
+            if ("Notification" in window) {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                        checkAndStart();
+                    } else {
+                        alert("Please Allow Notifications to get Job Alerts!");
+                        checkAndStart(); // Proceed anyway
+                    }
+                });
+            } else {
+                checkAndStart();
             }
-        };
+        }
 
-        function reconnectDriver(id) {
-            db.ref('live_cars/' + id).once('value').then((snapshot) => {
-                if (snapshot.exists()) {
-                    startTracking(id, snapshot.val().name);
-                } else {
-                    localStorage.removeItem('activeDriverId');
-                    document.getElementById('log').innerText = "Session expired.";
-                }
-            });
+        // 2. Beep Sound bajana
+        function playBeep() {
+            try {
+                var context = new (window.AudioContext || window.webkitAudioContext)();
+                var osc = context.createOscillator();
+                var gain = context.createGain();
+                osc.type = "sine";
+                osc.frequency.value = 800;
+                osc.connect(gain);
+                gain.connect(context.destination);
+                osc.start();
+                setTimeout(() => osc.stop(), 800); // 0.8 second beep
+            } catch(e) { console.log("Audio play failed"); }
+        }
+
+        // 3. Screen Notification dikhana
+        function showNotification(pickup, fare) {
+            if (Notification.permission === "granted") {
+                new Notification("🚨 New Job Alert - BookGadi", {
+                    body: "Pickup: " + pickup + " | Fare: " + fare,
+                    icon: "https://static.wixstatic.com/media/843689_497878e241e348adbd167a8cc7462f1b~mv2.png"
+                });
+            }
         }
 
         function checkAndStart() {
             var inputID = document.getElementById('driverInputID').value.trim();
-            if(inputID === "") return;
             db.ref('live_cars/' + inputID).once('value').then((snapshot) => {
                 if (snapshot.exists()) {
                     localStorage.setItem('activeDriverId', inputID);
@@ -97,61 +105,52 @@
         }
 
         function startTracking(id, name) {
-            if (navigator.geolocation) {
-                document.getElementById('loginSection').style.display = "none";
-                document.getElementById('statusSection').style.display = "block";
-                document.getElementById('bookingSection').style.display = "block";
-                document.getElementById('welcomeName').innerText = "Namaste, " + name;
-                document.getElementById('displayID').innerText = "ID: " + id;
-                document.getElementById('log').innerText = "";
+            document.getElementById('loginSection').style.display = "none";
+            document.getElementById('statusSection').style.display = "block";
+            document.getElementById('bookingSection').style.display = "block";
+            document.getElementById('welcomeName').innerText = name;
 
-                // Start Listening for Bookings
-                loadBookings();
-
-                watchId = navigator.geolocation.watchPosition(function(position) {
-                    db.ref('live_cars/' + id).update({
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude,
-                        status: "online",
-                        last_updated: Date.now()
-                    });
-                }, null, { enableHighAccuracy: true });
-            }
-        }
-
-        function loadBookings() {
-            // Sirf aakhri 5 bookings dikhayega
-            db.ref('bookings').limitToLast(5).on('value', (snapshot) => {
-                const listDiv = document.getElementById('bookingList');
+            // Listen for New Bookings
+            db.ref('bookings').limitToLast(1).on('value', (snapshot) => {
                 const data = snapshot.val();
                 if(!data) return;
+                
+                const currentId = Object.keys(data)[0];
+                const job = data[currentId];
 
-                let html = "";
-                // Reverse order takki naya upar dikhe
-                Object.keys(data).reverse().forEach(key => {
-                    const b = data[key];
-                    html += `
-                        <div class="booking-card">
-                            <span class="fare-tag">${b.fare || 'N/A'}</span>
-                            <div>🕒 <b>Time:</b> ${b.time || ''}</div>
-                            <div>📍 <b>From:</b> ${b.pickup || ''}</div>
-                            <div>🏁 <b>To:</b> ${b.drop || ''}</div>
-                        </div>
-                    `;
-                });
-                listDiv.innerHTML = html;
+                // Agar nayi booking hai to Beep aur Notification do
+                if (lastJobId && lastJobId !== currentId) {
+                    playBeep();
+                    showNotification(job.pickup, job.fare);
+                }
+                lastJobId = currentId;
+                updateList(data);
             });
+
+            navigator.geolocation.watchPosition(function(pos) {
+                db.ref('live_cars/' + id).update({
+                    lat: pos.coords.latitude, lng: pos.coords.longitude,
+                    status: "online", last_updated: Date.now()
+                });
+            }, null, { enableHighAccuracy: true });
+        }
+
+        function updateList(data) {
+            let html = "";
+            Object.keys(data).reverse().forEach(key => {
+                const b = data[key];
+                html += `<div class="booking-card"><span class="fare-tag">${b.fare}</span>
+                         <div>🕒 ${b.time}</div><div>📍 ${b.pickup}</div><div>🏁 ${b.drop}</div></div>`;
+            });
+            document.getElementById('bookingList').innerHTML = html;
         }
 
         function stopDuty() {
             var id = localStorage.getItem('activeDriverId');
-            if (watchId) navigator.geolocation.clearWatch(watchId);
-            if (id) {
-                db.ref('live_cars/' + id).update({ status: "offline", lat: null, lng: null }).then(() => {
-                    localStorage.removeItem('activeDriverId');
-                    location.reload();
-                });
-            }
+            db.ref('live_cars/' + id).update({ status: "offline", lat: null, lng: null }).then(() => {
+                localStorage.removeItem('activeDriverId');
+                location.reload();
+            });
         }
     </script>
 </body>
