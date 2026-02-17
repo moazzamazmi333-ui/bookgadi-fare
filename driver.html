@@ -17,6 +17,7 @@
         .booking-card { background: #fff; border: 1px solid #eee; border-left: 4px solid #1a73e8; padding: 12px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .fare-tag { color: #1e8e3e; font-weight: bold; float: right; font-size: 16px; }
         .time-tag { color: #555; font-size: 13px; margin-bottom: 5px; display: block; }
+        select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; background: white; }
     </style>
 </head>
 <body>
@@ -25,12 +26,19 @@
         <h3>Driver Duty Panel</h3>
         
         <div id="loginSection">
-            <input type="text" id="driverInputID" style="width:100%; padding:12px; margin:10px 0; border:1px solid #ddd; border-radius:8px;" placeholder="Enter Your Driver ID">
+            <input type="text" id="driverInputID" style="width:100%; padding:12px; margin:5px 0; border:1px solid #ddd; border-radius:8px;" placeholder="Enter Your Driver ID">
+            <select id="driverCity">
+                <option value="">Apna City Chunein</option>
+                <option value="Azamgarh">Azamgarh</option>
+                <option value="Lucknow">Lucknow</option>
+                <option value="Mau">Mau</option>
+                <option value="Varanasi">Varanasi</option>
+            </select>
             <button class="btn-go" onclick="initDuty()">Duty Start Karein</button>
         </div>
 
         <div id="statusSection" class="status-box">
-            <p style="color:#2e7d32; margin: 0; font-weight: bold;"><span class="pulse"></span> BookGadi: You are Online</p>
+            <p style="color:#2e7d32; margin: 0; font-weight: bold;"><span class="pulse"></span> BookGadi: Online (<span id="activeCity"></span>)</p>
             <h4 id="welcomeName" style="margin: 5px 0;"></h4>
             <div id="bookingList">Loading history...</div>
             <button class="btn-off" onclick="stopDuty()">Duty Offline Karein</button>
@@ -50,38 +58,45 @@
 
         window.onload = function() {
             const savedID = localStorage.getItem('activeDriverId');
-            if (savedID) {
-                document.getElementById('loginSection').innerHTML = `<button class="btn-go" onclick="reconnect('${savedID}')">Click to Restore Duty</button>`;
+            const savedCity = localStorage.getItem('activeCity');
+            if (savedID && savedCity) {
+                document.getElementById('loginSection').innerHTML = `<button class="btn-go" onclick="reconnect('${savedID}', '${savedCity}')">Click to Restore Duty (${savedCity})</button>`;
             }
         };
 
-        function reconnect(id) { checkAndStart(id); }
+        function reconnect(id, city) { checkAndStart(id, city); }
 
         async function initDuty() {
             const id = document.getElementById('driverInputID').value.trim();
+            const city = document.getElementById('driverCity').value;
+            
             if(!id) return alert("Please enter ID");
+            if(!city) return alert("Please select your city");
+
             if ("Notification" in window) await Notification.requestPermission();
             const audio = document.getElementById('beepSound');
-            audio.play().then(() => { audio.pause(); checkAndStart(id); }).catch(() => checkAndStart(id));
+            audio.play().then(() => { audio.pause(); checkAndStart(id, city); }).catch(() => checkAndStart(id, city));
         }
 
-        function checkAndStart(inputID) {
+        function checkAndStart(inputID, city) {
             db.ref('live_cars/' + inputID).once('value').then((snapshot) => {
                 if (snapshot.exists()) {
                     localStorage.setItem('activeDriverId', inputID);
-                    startTracking(inputID, snapshot.val().name);
+                    localStorage.setItem('activeCity', city);
+                    startTracking(inputID, snapshot.val().name, city);
                 } else {
                     document.getElementById('log').innerText = "ID record nahi mili!";
                 }
             });
         }
 
-        function startTracking(id, name) {
+        function startTracking(id, name, driverCity) {
             document.getElementById('loginSection').style.display = "none";
             document.getElementById('statusSection').style.display = "block";
             document.getElementById('welcomeName').innerText = name;
+            document.getElementById('activeCity').innerText = driverCity;
 
-            db.ref('bookings').limitToLast(15).on('value', (snapshot) => {
+            db.ref('bookings').limitToLast(20).on('value', (snapshot) => {
                 const data = snapshot.val();
                 const list = document.getElementById('bookingList');
                 list.innerHTML = ""; 
@@ -92,39 +107,48 @@
                 }
 
                 const keys = Object.keys(data).reverse();
-                const newestId = keys[0];
+                let matchingBookings = [];
 
                 keys.forEach(key => {
                     const b = data[key];
-                    const item = document.createElement('div');
-                    item.className = 'booking-card';
-                    // यहाँ हमने कस्टमर द्वारा चुना गया Date और Time दिखाया है
-                    item.innerHTML = `
-                        <span class="fare-tag">${b.fare}</span>
-                        <span class="time-tag">📅 ${b.date || 'Today'} | ⏰ ${b.time || ''}</span>
-                        <div style="font-size:14px;">📍 <b>From:</b> ${b.pickup}</div>
-                        <div style="font-size:14px;">🏁 <b>To:</b> ${b.drop}</div>
-                        <div style="font-size:12px; color:#1a73e8; margin-top:5px;">👤 ${b.name || 'Customer'}</div>
-                    `;
-                    list.appendChild(item);
+                    // City Filtering Logic: Pickup address mein city check karna
+                    if (b.pickup.toLowerCase().includes(driverCity.toLowerCase())) {
+                        matchingBookings.push({id: key, ...b});
+                        
+                        const item = document.createElement('div');
+                        item.className = 'booking-card';
+                        item.innerHTML = `
+                            <span class="fare-tag">${b.fare}</span>
+                            <span class="time-tag">📅 ${b.date || 'Today'} | ⏰ ${b.time || ''}</span>
+                            <div style="font-size:14px;">📍 <b>From:</b> ${b.pickup}</div>
+                            <div style="font-size:14px;">🏁 <b>To:</b> ${b.drop}</div>
+                            <div style="font-size:12px; color:#1a73e8; margin-top:5px;">👤 ${b.name || 'Customer'}</div>
+                        `;
+                        list.appendChild(item);
+                    }
                 });
 
-                if (!isFirstLoad && lastKnownBookingId !== newestId) {
-                    playBeep();
-                    const newJob = data[newestId];
-                    if (Notification.permission === "granted") {
-                        new Notification("🚨 New Booking!", { body: `${newJob.pickup} - ${newJob.time}` });
+                if (matchingBookings.length > 0) {
+                    const newestMatchId = matchingBookings[0].id;
+                    if (!isFirstLoad && lastKnownBookingId !== newestMatchId) {
+                        playBeep();
+                        const newJob = matchingBookings[0];
+                        if (Notification.permission === "granted") {
+                            new Notification("🚨 New Booking in " + driverCity, { body: `${newJob.pickup}` });
+                        }
                     }
+                    lastKnownBookingId = newestMatchId;
+                } else if (list.innerHTML === "") {
+                    list.innerHTML = `<p style='text-align:center;color:#888;'>No bookings for ${driverCity}.</p>`;
                 }
 
-                lastKnownBookingId = newestId;
                 isFirstLoad = false;
             });
 
             watchId = navigator.geolocation.watchPosition((pos) => {
                 db.ref('live_cars/' + id).update({
                     lat: pos.coords.latitude, lng: pos.coords.longitude,
-                    status: "online", last_updated: Date.now()
+                    status: "online", city: driverCity, last_updated: Date.now()
                 });
             }, null, { enableHighAccuracy: true });
         }
@@ -139,6 +163,7 @@
             const id = localStorage.getItem('activeDriverId');
             db.ref('live_cars/' + id).update({ status: "offline", lat: null, lng: null }).then(() => {
                 localStorage.removeItem('activeDriverId');
+                localStorage.removeItem('activeCity');
                 location.reload();
             });
         }
