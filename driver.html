@@ -105,71 +105,86 @@
     }
 
     function applyFilter() {
-        const filter = document.getElementById('cityFilter').value;
-        const list = document.getElementById('bookingList');
-        list.innerHTML = "";
+    const filter = document.getElementById('cityFilter').value;
+    const list = document.getElementById('bookingList');
+    list.innerHTML = "";
 
-        if (Object.keys(allBookings).length === 0) {
-            list.innerHTML = "<div class='no-data'>No bookings found.</div>";
-            return;
+    if (Object.keys(allBookings).length === 0) {
+        list.innerHTML = "<div class='no-data'>No bookings found.</div>";
+        return;
+    }
+
+    const keys = Object.keys(allBookings).reverse();
+    let found = 0;
+
+    keys.forEach(k => {
+        const b = allBookings[k];
+        const pickup = (b.pickup || "").toUpperCase().trim();
+        let match = false;
+
+        if (filter === "ALL") {
+            match = true;
+        } 
+        else if (filter === "AZAM") {
+            // Super expanded matching for Azamgarh variations
+            if (
+                pickup.includes("AZAM") || 
+                pickup.includes("AZM") || 
+                pickup.includes("AZA") || 
+                pickup.includes("AMGARH") || 
+                pickup.includes("AZAMGARH") ||
+                pickup.includes("AAZAM") || 
+                pickup.includes("AJAM") || 
+                pickup.includes("AZMGARH") || 
+                pickup.includes("AZAMGAR") || 
+                pickup.includes("AZAMGADH") || 
+                pickup.includes("आजमगढ़") ||     // Hindi input
+                pickup.includes("अज़मगढ़") ||
+                pickup.includes("आज़मगढ़")
+            ) {
+                match = true;
+            }
+        } 
+        else if (filter === "LUCK") {
+            if (pickup.includes("LUCK") || 
+                pickup.includes("LKO") || 
+                pickup.includes("LUCKNOW")) {
+                match = true;
+            }
+        } 
+        else if (filter === "VAR") {
+            if (pickup.includes("VAR") || 
+                pickup.includes("VARANASI") || 
+                pickup.includes("BSB") || 
+                pickup.includes("KASHI")) {
+                match = true;
+            }
         }
 
-        const keys = Object.keys(allBookings).reverse();
-        let found = 0;
+        if (match) {
+            found++;
+            const div = document.createElement('div');
+            div.className = "b-item";
+            div.innerHTML = `
+                <span class="b-fare">₹${b.fare || '—'}</span>
+                <div style="font-size:11px; color:var(--danger); font-weight:bold;">
+                    ${b.date || '?'} | ${b.time || '?'}
+                </div>
+                <div class="b-info"><b>From:</b> ${b.pickup || '—'}</div>
+                <div class="b-info"><b>To:</b> ${b.drop || '—'}</div>
+                <div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px;">
+                    <span style="font-size:13px; font-weight:bold;">${b.name || 'Customer'}</span>
+                    <a href="tel:${b.phone || ''}" class="call-btn">Call Now</a>
+                </div>
+            `;
+            list.appendChild(div);
+        }
+    });
 
-        keys.forEach(k => {
-            const b = allBookings[k];
-            const pickup = (b.pickup || "").toUpperCase().trim();
-            let match = false;
-
-            if (filter === "ALL") {
-                match = true;
-            } 
-            else if (filter === "AZAM") {
-                if (pickup.includes("AZAM") || 
-                    pickup.includes("AZM") || 
-                    pickup.includes("AZA") || 
-                    pickup.includes("AMGARH") || 
-                    pickup.includes("AZAMGARH")) {
-                    match = true;
-                }
-            } 
-            else if (filter === "LUCK") {
-                if (pickup.includes("LUCK") || 
-                    pickup.includes("LKO") || 
-                    pickup.includes("LUCKNOW")) {
-                    match = true;
-                }
-            } 
-            else if (filter === "VAR") {
-                if (pickup.includes("VAR") || 
-                    pickup.includes("VARANASI") || 
-                    pickup.includes("BSB") || 
-                    pickup.includes("KASHI")) {
-                    match = true;
-                }
-            }
-
-            if (match) {
-                found++;
-                const div = document.createElement('div');
-                div.className = "b-item";
-                div.innerHTML = `
-                    <span class="b-fare">₹${b.fare || '—'}</span>
-                    <div style="font-size:11px; color:var(--danger); font-weight:bold;">
-                        ${b.date || '?'} | ${b.time || '?'}
-                    </div>
-                    <div class="b-info"><b>From:</b> ${b.pickup || '—'}</div>
-                    <div class="b-info"><b>To:</b> ${b.drop || '—'}</div>
-                    <div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px;">
-                        <span style="font-size:13px; font-weight:bold;">${b.name || 'Customer'}</span>
-                        <a href="tel:${b.phone || ''}" class="call-btn">Call Now</a>
-                    </div>
-                `;
-                list.appendChild(div);
-            }
-        });
-
+    if (found === 0) {
+        list.innerHTML = `<div class='no-data'>No bookings found in this city. (Check if pickup has "${filter === 'AZAM' ? 'Azamgarh/Azam/Azm' : filter}" in it)</div>`;
+    }
+}
         if (found === 0) {
             list.innerHTML = `<div class='no-data'>No bookings found in this city.</div>`;
         }
