@@ -1,29 +1,29 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>BookGadi Driver Live - Secure Login</title>
+    <title>BookGadi Driver Live</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f4f7f6; padding: 20px; }
-        .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 350px; margin: auto; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; font-size: 16px; transition: 0.3s; }
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f4f7f6; padding: 15px; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 360px; margin: auto; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; font-size: 16px; }
         .btn-go { background: #1a73e8; }
-        .btn-off { background: #dc3545; margin-top: 20px; padding: 10px; font-size: 14px; }
+        .btn-off { background: #dc3545; margin-top: 15px; padding: 10px; font-size: 14px; }
         .status-box { background: #e8f5e9; padding: 15px; border-radius: 10px; display: none; border: 1px solid #c8e6c9; }
         .pulse { height: 10px; width: 10px; background: #2e7d32; border-radius: 50%; display: inline-block; margin-right: 5px; animation: blink 1s infinite; }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
         #bookingSection { display: none; margin-top: 20px; text-align: left; }
-        .booking-card { background: #fff; border: 1px solid #eee; border-left: 4px solid #1a73e8; padding: 12px; border-radius: 8px; margin-bottom: 10px; }
-        .fare-tag { color: #1e8e3e; font-weight: bold; font-size: 15px; float: right; }
+        .booking-card { background: #fff; border: 1px solid #eee; border-left: 4px solid #1a73e8; padding: 10px; border-radius: 8px; margin-bottom: 8px; }
+        .fare-tag { color: #1e8e3e; font-weight: bold; float: right; }
     </style>
 </head>
 <body>
     <div class="card">
-        <img src="https://www.bookgadi.com/logo.png" width="120" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3082/3082383.png'">
-        <h3 style="color:#333; margin-top: 10px;">Driver Duty Panel</h3>
+        <img src="https://www.bookgadi.com/logo.png" width="100" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3082/3082383.png'">
+        <h3 id="titleText">Driver Duty Panel</h3>
         
         <div id="loginSection">
             <input type="text" id="driverInputID" placeholder="Enter Your Driver ID">
@@ -31,11 +31,11 @@
         </div>
 
         <div id="statusSection" class="status-box">
-            <p style="color:#2e7d32; margin: 0; font-weight: bold;"><span class="pulse"></span> Aap Online Hain</p>
-            <h4 id="welcomeName"></h4>
+            <p style="color:#2e7d32; margin: 0; font-weight: bold;"><span class="pulse"></span> BookGadi: You are Online</p>
+            <h4 id="welcomeName" style="margin: 5px 0;"></h4>
             
             <div id="bookingSection">
-                <p style="font-weight: bold; color: #333;">New Bookings:</p>
+                <p style="font-weight: bold; font-size: 14px; color: #555;">New Job Alerts:</p>
                 <div id="bookingList"></div>
             </div>
 
@@ -51,55 +51,57 @@
         var watchId = null;
         var lastJobId = null;
 
-        // 1. Notification Permission mangna
+        // --- 1. Sabse Jaruri: AUTO-LOAD System ---
+        window.onload = function() {
+            var savedID = localStorage.getItem('activeDriverId');
+            if (savedID) {
+                document.getElementById('log').innerText = "Reconnecting...";
+                checkAndStart(savedID); 
+            }
+        };
+
         function askPermissionAndStart() {
             if ("Notification" in window) {
-                Notification.requestPermission().then(permission => {
-                    if (permission === "granted") {
-                        checkAndStart();
-                    } else {
-                        alert("Please Allow Notifications to get Job Alerts!");
-                        checkAndStart(); // Proceed anyway
-                    }
+                Notification.requestPermission().then(p => {
+                    var id = document.getElementById('driverInputID').value.trim();
+                    if(id) checkAndStart(id);
+                    else alert("ID bharein!");
                 });
             } else {
-                checkAndStart();
+                var id = document.getElementById('driverInputID').value.trim();
+                checkAndStart(id);
             }
         }
 
-        // 2. Beep Sound bajana
         function playBeep() {
             try {
                 var context = new (window.AudioContext || window.webkitAudioContext)();
                 var osc = context.createOscillator();
-                var gain = context.createGain();
                 osc.type = "sine";
-                osc.frequency.value = 800;
-                osc.connect(gain);
-                gain.connect(context.destination);
+                osc.frequency.value = 880;
+                osc.connect(context.destination);
                 osc.start();
-                setTimeout(() => osc.stop(), 800); // 0.8 second beep
-            } catch(e) { console.log("Audio play failed"); }
+                setTimeout(() => osc.stop(), 500);
+            } catch(e) {}
         }
 
-        // 3. Screen Notification dikhana
         function showNotification(pickup, fare) {
             if (Notification.permission === "granted") {
-                new Notification("🚨 New Job Alert - BookGadi", {
+                new Notification("BookGadi: New Job Alert!", {
                     body: "Pickup: " + pickup + " | Fare: " + fare,
-                    icon: "https://static.wixstatic.com/media/843689_497878e241e348adbd167a8cc7462f1b~mv2.png"
+                    icon: "https://www.bookgadi.com/logo.png"
                 });
             }
         }
 
-        function checkAndStart() {
-            var inputID = document.getElementById('driverInputID').value.trim();
+        function checkAndStart(inputID) {
             db.ref('live_cars/' + inputID).once('value').then((snapshot) => {
                 if (snapshot.exists()) {
-                    localStorage.setItem('activeDriverId', inputID);
+                    localStorage.setItem('activeDriverId', inputID); // Memory mein save
                     startTracking(inputID, snapshot.val().name);
                 } else {
-                    document.getElementById('log').innerText = "Ghalat ID!";
+                    document.getElementById('log').innerText = "Ghalat ID! Admin se puchein.";
+                    localStorage.removeItem('activeDriverId');
                 }
             });
         }
@@ -109,25 +111,25 @@
             document.getElementById('statusSection').style.display = "block";
             document.getElementById('bookingSection').style.display = "block";
             document.getElementById('welcomeName').innerText = name;
+            document.getElementById('log').innerText = "";
 
-            // Listen for New Bookings
+            // --- Real-time Booking Listener ---
             db.ref('bookings').limitToLast(1).on('value', (snapshot) => {
                 const data = snapshot.val();
                 if(!data) return;
-                
                 const currentId = Object.keys(data)[0];
                 const job = data[currentId];
 
-                // Agar nayi booking hai to Beep aur Notification do
                 if (lastJobId && lastJobId !== currentId) {
                     playBeep();
                     showNotification(job.pickup, job.fare);
                 }
                 lastJobId = currentId;
-                updateList(data);
+                updateBookingDisplay(data);
             });
 
-            navigator.geolocation.watchPosition(function(pos) {
+            // --- GPS Tracking ---
+            watchId = navigator.geolocation.watchPosition(function(pos) {
                 db.ref('live_cars/' + id).update({
                     lat: pos.coords.latitude, lng: pos.coords.longitude,
                     status: "online", last_updated: Date.now()
@@ -135,18 +137,19 @@
             }, null, { enableHighAccuracy: true });
         }
 
-        function updateList(data) {
+        function updateBookingDisplay(data) {
             let html = "";
             Object.keys(data).reverse().forEach(key => {
                 const b = data[key];
                 html += `<div class="booking-card"><span class="fare-tag">${b.fare}</span>
-                         <div>🕒 ${b.time}</div><div>📍 ${b.pickup}</div><div>🏁 ${b.drop}</div></div>`;
+                         <div>🕒 ${b.time}</div><div>📍 From: ${b.pickup}</div><div>🏁 To: ${b.drop}</div></div>`;
             });
             document.getElementById('bookingList').innerHTML = html;
         }
 
         function stopDuty() {
             var id = localStorage.getItem('activeDriverId');
+            if (watchId) navigator.geolocation.clearWatch(watchId);
             db.ref('live_cars/' + id).update({ status: "offline", lat: null, lng: null }).then(() => {
                 localStorage.removeItem('activeDriverId');
                 location.reload();
