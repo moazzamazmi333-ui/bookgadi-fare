@@ -295,11 +295,9 @@ function sendWhatsApp(){
     
     if(!n || ph.length < 10) return alert("Sahi details bharein");
     
-    // 1. Navigation Link (Pickup से Drop तक का रास्ता)
+    // Google Maps Navigation Link (Pickup se Drop tak ka raasta)
+    // saddr = Start Address (Pickup), daddr = Destination Address (Drop)
     const navLink = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(p)}&destination=${encodeURIComponent(d)}&travelmode=driving`;
-    
-    // 2. Direct Call Link (ड्राइवर के लिए नंबर डायल करने की ज़रूरत नहीं)
-    const callLink = `tel:${ph}`;
     
     const msg = `*BookGadi Booking Request*\n\n` +
                 `👤 *Name:* ${n}\n` +
@@ -307,11 +305,11 @@ function sendWhatsApp(){
                 `💰 *Fare:* ${f}\n` +
                 `📍 *Pickup:* ${p}\n` +
                 `🏁 *Drop:* ${d}\n\n` +
-                `🗺️ *Route:* ${navLink}\n\n` +
-                `📞 *Call Customer:* ${callLink}`;
+                `🗺️ *Navigation Route:* ${navLink}`;
     
     window.open(`https://wa.me/919651191446?text=${encodeURIComponent(msg)}`, "_blank");
 }
+</script>
 
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8fFUPeGfUy8Wwh-mQ_d3fbGZzKBy7VwM&libraries=places&callback=initMap" async defer></script>
 </body>
