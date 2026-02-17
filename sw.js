@@ -6,4 +6,9 @@ self.addEventListener('fetch', event => {
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', () => self.clients.claim());
 
+self.addEventListener('notificationclick', function(event) {
+    event.notification.close();
+    event.waitUntil(clients.openWindow('https://www.bookgadi.com/driver')); 
+});
+
 console.log('BookGadi Service Worker ready!');
