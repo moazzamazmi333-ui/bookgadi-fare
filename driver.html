@@ -15,15 +15,15 @@
         .status-box { background: #e8f5e9; padding: 15px; border-radius: 10px; display: none; border: 1px solid #c8e6c9; }
         .pulse { height: 10px; width: 10px; background: #2e7d32; border-radius: 50%; display: inline-block; margin-right: 5px; animation: blink 1s infinite; }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
-        #bookingList { margin-top: 15px; text-align: left; max-height: 300px; overflow-y: auto; }
-        .booking-card { background: #fff; border: 1px solid #eee; border-left: 4px solid #1a73e8; padding: 10px; border-radius: 8px; margin-bottom: 8px; animation: slideIn 0.3s ease-out; }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-        .fare-tag { color: #1e8e3e; font-weight: bold; float: right; font-size: 16px; }
+        #bookingList { margin-top: 15px; text-align: left; }
+        .booking-card { background: #fff; border: 1px solid #eee; border-left: 4px solid #1a73e8; padding: 10px; border-radius: 8px; margin-bottom: 8px; }
+        .fare-tag { color: #1e8e3e; font-weight: bold; float: right; }
+        .notif-btn { background: #555; font-size: 11px; padding: 5px; margin-top: 10px; width: auto; display: inline-block; }
     </style>
 </head>
 <body>
     <div class="card">
-        <img src="https://www.bookgadi.com/logo.png" width="100" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3082/3082383.png'">
+        <img src="https://www.bookgadi.com/logo.png" width="100">
         <h3>Driver Duty Panel</h3>
         
         <div id="loginSection">
@@ -33,7 +33,10 @@
 
         <div id="statusSection" class="status-box">
             <p style="color:#2e7d32; margin: 0; font-weight: bold;"><span class="pulse"></span> BookGadi: You are Online</p>
-            <h4 id="welcomeName" style="margin: 5px 0;"></h4>
+            <h4 id="welcomeName"></h4>
+            
+            <button class="notif-btn" onclick="testNotif()">🔔 Test Notification</button>
+
             <div id="bookingList"></div>
             <button class="btn-off" onclick="stopDuty()">Duty Offline Karein</button>
         </div>
@@ -51,22 +54,23 @@
 
         window.onload = function() {
             const savedID = localStorage.getItem('activeDriverId');
-            if (savedID) {
-                checkAndStart(savedID);
-            }
+            if (savedID) checkAndStart(savedID);
         };
 
-        function initDuty() {
+        async function initDuty() {
             const id = document.getElementById('driverInputID').value.trim();
             if(!id) return alert("ID bharein");
+
+            // नोटिफिकेशन परमिशन के लिए नया तरीका
+            if ("Notification" in window) {
+                const permission = await Notification.requestPermission();
+                if(permission !== 'granted') {
+                    alert("कृपया Notification Allow करें वरना बुकिंग नहीं पता चलेगी!");
+                }
+            }
             
-            // Notification Permission
-            if ("Notification" in window) Notification.requestPermission();
-            
-            // Sound Play (User interaction requirement bypass)
             const audio = document.getElementById('beepSound');
             audio.play().then(() => audio.pause()); 
-            
             checkAndStart(id);
         }
 
@@ -76,7 +80,7 @@
                     localStorage.setItem('activeDriverId', inputID);
                     startTracking(inputID, snapshot.val().name);
                 } else {
-                    document.getElementById('log').innerText = "ID record nahi mili!";
+                    document.getElementById('log').innerText = "ID Record Nahi Mila!";
                 }
             });
         }
@@ -86,32 +90,22 @@
             document.getElementById('statusSection').style.display = "block";
             document.getElementById('welcomeName').innerText = name;
 
-            // --- REAL-TIME BOOKING LISTENER ---
-            // 'child_added' nayi booking aate hi apne aap trigger hoga
             db.ref('bookings').limitToLast(5).on('child_added', (snapshot) => {
                 const b = snapshot.val();
-                
-                // Nayi list item banana
                 const list = document.getElementById('bookingList');
                 const item = document.createElement('div');
                 item.className = 'booking-card';
-                item.innerHTML = `<span class="fare-tag">${b.fare}</span>
-                                 <div>🕒 ${b.time}</div><div>📍 From: ${b.pickup}</div><div>🏁 To: ${b.drop}</div>`;
-                
-                // Nayi booking upar dikhane ke liye
+                item.innerHTML = `<span class="fare-tag">${b.fare}</span><div>🕒 ${b.time}</div><div>📍 From: ${b.pickup}</div><div>🏁 To: ${b.drop}</div>`;
                 list.insertBefore(item, list.firstChild);
 
-                // Sirf nayi booking par sound aur notification (First load ke baad)
                 if (!isFirstLoad) {
                     playBeep();
-                    showNotification(b.pickup, b.fare);
+                    showNotification("New Job Alert!", `Pickup: ${b.pickup}`);
                 }
             });
 
-            // Pehli baar load hone par sound na baje isliye
             db.ref('bookings').once('value', () => { isFirstLoad = false; });
 
-            // --- GPS TRACKING ---
             watchId = navigator.geolocation.watchPosition((pos) => {
                 db.ref('live_cars/' + id).update({
                     lat: pos.coords.latitude, lng: pos.coords.longitude,
@@ -120,28 +114,44 @@
             }, null, { enableHighAccuracy: true });
         }
 
-        function playBeep() {
-            const audio = document.getElementById('beepSound');
-            audio.currentTime = 0;
-            audio.play().catch(e => console.log("Sound error:", e));
-        }
-
-        function showNotification(p, f) {
+        function showNotification(title, body) {
             if (Notification.permission === "granted") {
-                new Notification("BookGadi: New Job Alert!", {
-                    body: `Pickup: ${p} | Fare: ${f}`,
-                    icon: "https://www.bookgadi.com/logo.png"
+                // यह तरीका मोबाइल पर बेहतर काम करता है
+                navigator.serviceWorker.ready.then(function(registration) {
+                    registration.showNotification(title, {
+                        body: body,
+                        icon: 'https://www.bookgadi.com/logo.png',
+                        vibrate: [200, 100, 200]
+                    });
+                }).catch(function() {
+                    // अगर सर्विस वर्कर न हो तो साधारण तरीका
+                    new Notification(title, { body: body });
                 });
             }
         }
 
+        function testNotif() {
+            playBeep();
+            showNotification("Test Success!", "Aapka notification sahi kaam kar raha hai.");
+        }
+
+        function playBeep() {
+            const audio = document.getElementById('beepSound');
+            audio.currentTime = 0;
+            audio.play();
+        }
+
         function stopDuty() {
             const id = localStorage.getItem('activeDriverId');
-            if (watchId) navigator.geolocation.clearWatch(watchId);
             db.ref('live_cars/' + id).update({ status: "offline", lat: null, lng: null }).then(() => {
                 localStorage.removeItem('activeDriverId');
                 location.reload();
             });
+        }
+
+        // Service Worker Register (नोटिफिकेशन के लिए जरूरी)
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').then(() => console.log("Worker Active"));
         }
     </script>
 </body>
