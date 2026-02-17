@@ -21,7 +21,7 @@
       "purpose": "any maskable"
     }
   ],
-  "id": "/",
-  "scope": "/",
+  "id": "/livecar",
+  "scope": "/livecar",
   "prefer_related_applications": false
 }
