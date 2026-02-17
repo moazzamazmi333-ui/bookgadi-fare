@@ -13,11 +13,11 @@
         .status-box { background: #e8f5e9; padding: 15px; border-radius: 10px; display: none; border: 1px solid #c8e6c9; }
         .pulse { height: 10px; width: 10px; background: #2e7d32; border-radius: 50%; display: inline-block; margin-right: 5px; animation: blink 1s infinite; }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
-        #bookingList { margin-top: 15px; text-align: left; max-height: 500px; overflow-y: auto; }
+        #bookingList { margin-top: 15px; text-align: left; max-height: 550px; overflow-y: auto; }
         .booking-card { background: #fff; border: 1px solid #eee; border-left: 4px solid #1a73e8; padding: 12px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .fare-tag { color: #1e8e3e; font-weight: bold; float: right; font-size: 16px; }
         .time-tag { color: #555; font-size: 13px; margin-bottom: 5px; display: block; }
-        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -28,11 +28,11 @@
         <div id="loginSection">
             <input type="text" id="driverInputID" placeholder="Enter Your Driver ID">
             <select id="driverCity">
-                <option value="">Select Your City</option>
-                <option value="Azamgarh">Azamgarh</option>
-                <option value="Lucknow">Lucknow</option>
-                <option value="Mau">Mau</option>
-                <option value="Varanasi">Varanasi</option>
+                <option value="">Select City (Area)</option>
+                <option value="Azamgarh">Azamgarh Area</option>
+                <option value="Lucknow">Lucknow Area</option>
+                <option value="Mau">Mau Area</option>
+                <option value="Varanasi">Varanasi Area</option>
             </select>
             <button class="btn-go" onclick="initDuty()">Duty Start Karein</button>
         </div>
@@ -42,7 +42,7 @@
                 <span class="pulse"></span> Online: <span id="activeCityDisp"></span>
             </p>
             <h4 id="welcomeName" style="margin: 5px 0;"></h4>
-            <div id="bookingList">Searching for bookings...</div>
+            <div id="bookingList">Loading your area history...</div>
             <button class="btn-off" onclick="stopDuty()">Duty Offline Karein</button>
         </div>
         <div id="log" style="color:red; font-size:12px; margin-top:10px;"></div>
@@ -54,8 +54,7 @@
         const config = { databaseURL: "https://bookgadi-97c98-default-rtdb.firebaseio.com" };
         firebase.initializeApp(config);
         const db = firebase.database();
-        let watchId = null;
-        let lastKnownBookingId = null;
+        let lastKnownId = null;
         let isFirstLoad = true;
 
         window.onload = function() {
@@ -69,8 +68,7 @@
         async function initDuty() {
             const id = document.getElementById('driverInputID').value.trim();
             const city = document.getElementById('driverCity').value;
-            
-            if(!id || !city) return alert("ID aur City dono bharein!");
+            if(!id || !city) return alert("ID aur City dono jaruri hain!");
 
             if ("Notification" in window) await Notification.requestPermission();
             const audio = document.getElementById('beepSound');
@@ -84,7 +82,7 @@
                     localStorage.setItem('activeCity', city);
                     startTracking(inputID, snapshot.val().name, city);
                 } else {
-                    document.getElementById('log').innerText = "ID record nahi mili!";
+                    document.getElementById('log').innerText = "Error: ID correct nahi hai!";
                 }
             });
         }
@@ -95,27 +93,30 @@
             document.getElementById('welcomeName').innerText = name;
             document.getElementById('activeCityDisp').innerText = driverCity;
 
-            // 'value' listener history aur naye data dono ke liye
-            db.ref('bookings').limitToLast(50).on('value', (snapshot) => {
+            // History Loading + Real-time (Limit 100 for better search)
+            db.ref('bookings').limitToLast(100).on('value', (snapshot) => {
                 const data = snapshot.val();
                 const list = document.getElementById('bookingList');
                 list.innerHTML = ""; 
 
                 if (!data) {
-                    list.innerHTML = "<p style='color:#888;'>No bookings found.</p>";
+                    list.innerHTML = "<p>No bookings yet.</p>";
                     return;
                 }
 
                 const keys = Object.keys(data).reverse();
-                let foundAny = false;
-                let newestMatchId = null;
+                let matchFound = false;
+                let currentNewestId = null;
 
                 keys.forEach(key => {
                     const b = data[key];
-                    // City Filter Logic
-                    if (b.pickup && b.pickup.toLowerCase().includes(driverCity.toLowerCase())) {
-                        if (!newestMatchId) newestMatchId = key;
-                        foundAny = true;
+                    const pickup = (b.pickup || "").toLowerCase();
+                    const targetCity = driverCity.toLowerCase();
+
+                    // Check if city matches pickup address
+                    if (pickup.includes(targetCity)) {
+                        if (!currentNewestId) currentNewestId = key;
+                        matchFound = true;
 
                         const item = document.createElement('div');
                         item.className = 'booking-card';
@@ -124,39 +125,33 @@
                             <span class="time-tag">📅 ${b.date || ''} | ⏰ ${b.time || ''}</span>
                             <div style="font-size:14px;">📍 <b>From:</b> ${b.pickup}</div>
                             <div style="font-size:14px;">🏁 <b>To:</b> ${b.drop}</div>
-                            <div style="font-size:12px; color:#1a73e8; margin-top:5px;">👤 ${b.name || 'Customer'}</div>
+                            <div style="font-size:12px; color:#1a73e8; margin-top:5px;">👤 ${b.name} | 📞 ${b.phone}</div>
                         `;
                         list.appendChild(item);
                     }
                 });
 
-                // Nayi booking alert
-                if (!isFirstLoad && newestMatchId && lastKnownBookingId !== newestMatchId) {
-                    playBeep();
+                // Sound logic for new match
+                if (!isFirstLoad && currentNewestId && lastKnownId !== currentNewestId) {
+                    document.getElementById('beepSound').play();
                     if (Notification.permission === "granted") {
-                        new Notification("🚨 New Job in " + driverCity);
+                        new Notification("Nayi Booking: " + driverCity);
                     }
                 }
 
-                if (newestMatchId) lastKnownBookingId = newestMatchId;
-                if (!foundAny) list.innerHTML = `<p style='color:#888;'>No bookings for ${driverCity} in recent history.</p>`;
+                if (currentNewestId) lastKnownId = currentNewestId;
+                if (!matchFound) list.innerHTML = `<p style='color:#888; font-size:13px;'>Aapke area (${driverCity}) ki koi booking nahi mili.</p>`;
                 
                 isFirstLoad = false;
             });
 
-            // GPS Update
-            watchId = navigator.geolocation.watchPosition((pos) => {
+            // GPS
+            navigator.geolocation.watchPosition((pos) => {
                 db.ref('live_cars/' + id).update({
                     lat: pos.coords.latitude, lng: pos.coords.longitude,
                     status: "online", city: driverCity, last_updated: Date.now()
                 });
             }, null, { enableHighAccuracy: true });
-        }
-
-        function playBeep() {
-            const audio = document.getElementById('beepSound');
-            audio.currentTime = 0;
-            audio.play();
         }
 
         function stopDuty() {
