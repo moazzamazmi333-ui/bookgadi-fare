@@ -1,177 +1,203 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>BookGadi Driver Panel</title>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BookGadi Driver Pro</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f4f7f6; padding: 15px; margin: 0; }
-        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 400px; margin: 20px auto; }
-        .btn-go { background: #1a73e8; width: 100%; padding: 15px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; }
-        .btn-off { background: #dc3545; width: 100%; padding: 10px; border: none; border-radius: 8px; color: white; margin-top: 15px; }
-        .status-box { background: #e8f5e9; padding: 15px; border-radius: 10px; display: none; border: 1px solid #c8e6c9; }
-        .pulse { height: 10px; width: 10px; background: #2e7d32; border-radius: 50%; display: inline-block; margin-right: 5px; animation: blink 1s infinite; }
+        :root { --primary: #1a73e8; --success: #2e7d32; --danger: #d93025; --bg: #f8f9fa; }
+        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--bg); margin: 0; padding: 10px; color: #333; }
+        .container { max-width: 450px; margin: auto; }
+        
+        /* Header */
+        .header { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); text-align: center; margin-bottom: 15px; }
+        .header img { width: 130px; margin-bottom: 10px; }
+        
+        /* Login & Controls */
+        .input-group { margin-bottom: 15px; text-align: left; }
+        label { font-size: 13px; font-weight: 600; color: #666; margin-left: 5px; }
+        input, select { width: 100%; padding: 14px; margin-top: 5px; border: 1.5px solid #ddd; border-radius: 12px; box-sizing: border-box; font-size: 16px; transition: 0.3s; }
+        input:focus, select:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(26,115,232,0.1); }
+        
+        .btn { width: 100%; padding: 16px; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:active { transform: scale(0.98); }
+        .btn-danger { background: #fff; color: var(--danger); border: 1.5px solid var(--danger); margin-top: 20px; }
+
+        /* Status & Filter Area */
+        .status-card { background: white; border-radius: 20px; padding: 15px; display: none; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+        .online-badge { display: inline-flex; align-items: center; background: #e8f5e9; color: var(--success); padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; }
+        .pulse { height: 8px; width: 8px; background: var(--success); border-radius: 50%; margin-right: 8px; animation: blink 1.2s infinite; }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
-        #bookingList { margin-top: 15px; text-align: left; max-height: 550px; overflow-y: auto; padding: 5px; }
-        .booking-card { background: #fff; border: 1px solid #eee; border-left: 6px solid #1a73e8; padding: 15px; border-radius: 10px; margin-bottom: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.08); }
-        .fare-tag { color: #1e8e3e; font-weight: bold; font-size: 18px; float: right; }
-        .time-tag { color: #d93025; font-size: 13px; font-weight: bold; display: block; margin-bottom: 5px; }
-        input, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        .city-filter-active { background: #fff9c4; padding: 10px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #fbc02d; }
+
+        /* Booking Cards */
+        #bookingList { margin-top: 20px; padding-bottom: 100px; }
+        .b-card { background: white; border-radius: 16px; padding: 18px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); border: 1px solid #eee; position: relative; overflow: hidden; }
+        .b-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--primary); }
+        .b-fare { color: var(--success); font-size: 20px; font-weight: 800; float: right; }
+        .b-date { font-size: 12px; color: #777; margin-bottom: 10px; display: block; font-weight: 600; }
+        .b-loc { font-size: 14px; margin: 8px 0; display: flex; align-items: flex-start; gap: 8px; }
+        .b-loc b { color: #555; min-width: 45px; }
+        .b-footer { margin-top: 12px; padding-top: 12px; border-top: 1px dashed #eee; display: flex; justify-content: space-between; align-items: center; }
+        .call-btn { background: var(--primary); color: white; text-decoration: none; padding: 8px 15px; border-radius: 8px; font-size: 13px; font-weight: 600; }
+        
+        .no-booking { padding: 40px 20px; color: #999; font-size: 14px; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <img src="https://www.bookgadi.com/logo.png" width="120">
-        
-        <div id="loginSection">
-            <h3>Driver Login</h3>
-            <input type="text" id="driverInputID" placeholder="Enter Driver ID">
-            <button class="btn-go" onclick="verifyDriver()">Login & Start</button>
-        </div>
 
-        <div id="statusSection" class="status-box">
-            <div class="city-filter-active">
-                <label style="font-size:12px; font-weight:bold;">Current Filter Area:</label>
-                <select id="driverCity" onchange="updateFilter()">
-                    <option value="ALL">Show All Bookings</option>
-                    <option value="Azamgarh">Azamgarh</option>
-                    <option value="Lucknow">Lucknow</option>
-                    <option value="Varanasi">Varanasi</option>
-                    <option value="Mau">Mau</option>
-                </select>
+<div class="container">
+    <div class="header">
+        <img src="https://www.bookgadi.com/logo.png" alt="BookGadi">
+        <div id="loginSection">
+            <div class="input-group">
+                <label>Driver ID</label>
+                <input type="text" id="driverInputID" placeholder="Enter ID (Example: BG01)">
             </div>
-            
-            <p style="color:#2e7d32; margin: 0; font-weight: bold;"><span class="pulse"></span> Online Duty</p>
-            <h4 id="welcomeName" style="margin: 5px 0;"></h4>
-            
-            <div id="bookingList">Searching bookings...</div>
-            <button class="btn-off" onclick="stopDuty()">Go Offline</button>
+            <button class="btn btn-primary" onclick="verifyDriver()">Login & Start Duty</button>
         </div>
-        <div id="log" style="color:red; font-size:13px; margin-top:10px;"></div>
     </div>
 
-    <audio id="beepSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
+    <div id="statusSection" class="status-card">
+        <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <div class="online-badge"><span class="pulse"></span> Online</div>
+            <div style="font-size: 12px; font-weight: bold; color: #1a73e8;" id="welcomeName"></div>
+        </div>
 
-    <script>
-        const config = { databaseURL: "https://bookgadi-97c98-default-rtdb.firebaseio.com" };
-        firebase.initializeApp(config);
-        const db = firebase.database();
-        let lastKnownId = null;
-        let isFirstLoad = true;
-        let globalName = "";
-        let globalID = "";
+        <div class="input-group">
+            <label>Filter by Area</label>
+            <select id="areaFilter" onchange="loadBookings()">
+                <option value="ALL">All Bookings (Sab Dikhaiye)</option>
+                <option value="Azamgarh">Azamgarh Area</option>
+                <option value="Lucknow">Lucknow Area</option>
+                <option value="Varanasi">Varanasi Area</option>
+                <option value="Mau">Mau Area</option>
+            </select>
+        </div>
 
-        window.onload = function() {
-            const savedID = localStorage.getItem('activeDriverId');
-            if (savedID) {
-                checkAndRestore(savedID);
+        <div id="bookingList">Searching bookings...</div>
+        
+        <button class="btn btn-danger" onclick="stopDuty()">Go Offline</button>
+    </div>
+    
+    <div id="log" style="color:var(--danger); font-size:12px; margin-top:10px; text-align:center;"></div>
+</div>
+
+<audio id="beepSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
+
+<script>
+    const config = { databaseURL: "https://bookgadi-97c98-default-rtdb.firebaseio.com" };
+    firebase.initializeApp(config);
+    const db = firebase.database();
+    
+    let currentID = "";
+    let currentName = "";
+    let lastTopId = null;
+    let isFirst = true;
+
+    window.onload = function() {
+        const sid = localStorage.getItem('bg_id');
+        if (sid) verifyDriver(sid);
+    };
+
+    function verifyDriver(idFromStorage) {
+        const id = idFromStorage || document.getElementById('driverInputID').value.trim();
+        if(!id) return;
+
+        db.ref('live_cars/' + id).once('value').then(snap => {
+            if(snap.exists()){
+                currentID = id;
+                currentName = snap.val().name;
+                localStorage.setItem('bg_id', id);
+                showApp();
+            } else {
+                document.getElementById('log').innerText = "Driver ID not found!";
             }
-        };
+        });
+    }
 
-        function verifyDriver() {
-            const id = document.getElementById('driverInputID').value.trim();
-            if(!id) return alert("Enter ID");
-            checkAndRestore(id);
-        }
+    function showApp() {
+        document.getElementById('loginSection').parentElement.style.display = "none";
+        document.getElementById('statusSection').style.display = "block";
+        document.getElementById('welcomeName').innerText = "Hi, " + currentName;
+        loadBookings();
+        startGPS();
+    }
 
-        function checkAndRestore(id) {
-            db.ref('live_cars/' + id).once('value').then((snapshot) => {
-                if (snapshot.exists()) {
-                    globalID = id;
-                    globalName = snapshot.val().name;
-                    localStorage.setItem('activeDriverId', id);
-                    runApp();
-                } else {
-                    document.getElementById('log').innerText = "Driver ID not found!";
+    function loadBookings() {
+        const filter = document.getElementById('areaFilter').value.toLowerCase();
+        // Smart keywords for Azamgarh and Lucknow
+        const keyword = filter.substring(0, 4); 
+
+        db.ref('bookings').limitToLast(150).on('value', snap => {
+            const data = snap.val();
+            const list = document.getElementById('bookingList');
+            list.innerHTML = "";
+            
+            if(!data) {
+                list.innerHTML = "<div class='no-booking'>No bookings yet.</div>";
+                return;
+            }
+
+            const keys = Object.keys(data).reverse();
+            let count = 0;
+            let firstId = null;
+
+            keys.forEach(k => {
+                const b = data[k];
+                const pickup = (b.pickup || "").toLowerCase();
+                
+                // Flexible Matching: Full name match OR short keyword match (Azam, Luck)
+                let match = (filter === "all") || pickup.includes(filter) || pickup.includes(keyword);
+
+                if(match) {
+                    if(!firstId) firstId = k;
+                    count++;
+                    const card = document.createElement('div');
+                    card.className = "b-card";
+                    card.innerHTML = `
+                        <span class="b-fare">₹${b.fare}</span>
+                        <span class="b-date">📅 ${b.date || ''} | ⏰ ${b.time || ''}</span>
+                        <div class="b-loc"><b>FROM:</b> <span>${b.pickup}</span></div>
+                        <div class="b-loc"><b>TO:</b> <span>${b.drop}</span></div>
+                        <div class="b-footer">
+                            <span style="font-size:13px; font-weight:600; color:#555;">👤 ${b.name}</span>
+                            <a href="tel:${b.phone}" class="call-btn">📞 Call Now</a>
+                        </div>
+                    `;
+                    list.appendChild(card);
                 }
             });
-        }
 
-        function updateFilter() {
-            // जब ड्राइवर शहर बदलेगा तो लिस्ट तुरंत अपडेट होगी
-            isFirstLoad = true; 
-            runApp();
-        }
+            if(!isFirst && firstId && firstId !== lastTopId) {
+                document.getElementById('beepSound').play().catch(()=>{});
+            }
+            lastTopId = firstId;
+            isFirst = false;
 
-        async function runApp() {
-            const driverCity = document.getElementById('driverCity').value;
-            document.getElementById('loginSection').style.display = "none";
-            document.getElementById('statusSection').style.display = "block";
-            document.getElementById('welcomeName').innerText = globalName;
+            if(count === 0) {
+                list.innerHTML = `<div class="no-booking">No bookings found for "${filter}".<br>Please try "All Bookings".</div>`;
+            }
+        });
+    }
 
-            // Permission for sound
-            if ("Notification" in window) Notification.requestPermission();
-
-            db.ref('bookings').limitToLast(300).on('value', (snapshot) => {
-                const data = snapshot.val();
-                const list = document.getElementById('bookingList');
-                list.innerHTML = ""; 
-
-                if (!data) {
-                    list.innerHTML = "<p>No bookings yet.</p>";
-                    return;
-                }
-
-                const keys = Object.keys(data).reverse();
-                let topId = null;
-                let count = 0;
-
-                keys.forEach(key => {
-                    const b = data[key];
-                    const pickup = (b.pickup || "").toLowerCase();
-                    const target = driverCity.toLowerCase();
-                    
-                    // SMART SEARCH: Azamgarh के लिए "azam" भी चेक करेगा
-                    let isMatch = (driverCity === "ALL") || pickup.includes(target);
-                    
-                    // Special case for Azamgarh
-                    if (target === "azamgarh" && pickup.includes("azam")) isMatch = true;
-
-                    if (isMatch) {
-                        if(!topId) topId = key;
-                        count++;
-                        
-                        const item = document.createElement('div');
-                        item.className = 'booking-card';
-                        item.innerHTML = `
-                            <span class="fare-tag">₹${b.fare}</span>
-                            <span class="time-tag">📅 ${b.date} | ⏰ ${b.time}</span>
-                            <div style="font-size:14px;">📍 <b>From:</b> ${b.pickup}</div>
-                            <div style="font-size:14px;">🏁 <b>To:</b> ${b.drop}</div>
-                            <div style="font-size:13px; color:#1a73e8; margin-top:8px; border-top:1px solid #eee; padding-top:5px;">
-                                👤 ${b.name} | 📞 <a href="tel:${b.phone}">${b.phone}</a>
-                            </div>
-                        `;
-                        list.appendChild(item);
-                    }
-                });
-
-                if (!isFirstLoad && topId && lastKnownId !== topId) {
-                    document.getElementById('beepSound').play().catch(()=>{});
-                }
-
-                lastKnownId = topId;
-                if(count === 0) list.innerHTML = `<p style='color:#888;'>No bookings found for "${driverCity}".</p>`;
-                isFirstLoad = false;
+    function startGPS() {
+        navigator.geolocation.watchPosition(pos => {
+            db.ref('live_cars/' + currentID).update({
+                lat: pos.coords.latitude, lng: pos.coords.longitude,
+                status: "online", last_seen: Date.now()
             });
+        }, null, { enableHighAccuracy: true });
+    }
 
-            // GPS
-            navigator.geolocation.getCurrentPosition((pos) => {
-                db.ref('live_cars/' + globalID).update({
-                    lat: pos.coords.latitude, lng: pos.coords.longitude,
-                    status: "online", last_seen: Date.now()
-                });
-            });
-        }
-
-        function stopDuty() {
-            db.ref('live_cars/' + globalID).update({ status: "offline" }).then(() => {
-                localStorage.clear();
-                location.reload();
-            });
-        }
-    </script>
+    function stopDuty() {
+        db.ref('live_cars/' + currentID).update({ status: "offline" }).then(() => {
+            localStorage.clear();
+            location.reload();
+        });
+    }
+</script>
 </body>
 </html>
