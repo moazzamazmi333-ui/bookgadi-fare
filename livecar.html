@@ -321,34 +321,49 @@ function sendWhatsApp(){
     
     window.open(`https://wa.me/919651191446?text=${encodeURIComponent(msg)}`, "_blank");
 }
+// 1. प्रॉम्प्ट को होल्ड करने के लिए वेरिएबल
 let deferredPrompt;
 
-// 1. ब्राउज़र के डिफॉल्ट प्रॉम्प्ट को रोकें और उसे 'deferredPrompt' में सेव करें
+// 2. ब्राउज़र के इंस्टॉल इवेंट को पकड़ना
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
-    // यहाँ आप 'Install Now' बटन को दिखा सकते हैं अगर वो पहले से छुपा हुआ हो
+    console.log("Install prompt ready!");
 });
 
-// 2. 'Install Now' बटन के फंक्शन को अपडेट करें
+// 3. मुख्य फंक्शन - जो बटन क्लिक पर चलेगा
 function openInstallPopup() {
+    console.log("Button Clicked!"); // चेक करने के लिए कि बटन काम कर रहा है
+    
+    // अगर ब्राउज़र ऑटो-प्रॉम्प्ट के लिए तैयार है
     if (deferredPrompt) {
-        // ब्राउज़र का असली इंस्टॉल प्रॉम्प्ट दिखाएं
         deferredPrompt.prompt();
-        
-        // यूजर के फैसले का इंतज़ार करें
         deferredPrompt.userChoice.then((choiceResult) => {
             if (choiceResult.outcome === 'accepted') {
-                console.log('User accepted the install prompt');
-            } else {
-                console.log('User dismissed the install prompt');
+                console.log('User installed the app');
             }
-            deferredPrompt = null; // एक बार इस्तेमाल के बाद इसे खाली कर दें
+            deferredPrompt = null;
         });
+    } 
+    
+    // ब्राउज़र सपोर्ट करे या न करे, पॉपअप को हमेशा दिखाओ (Force Show)
+    const modal = document.getElementById("installPopup");
+    if (modal) {
+        modal.style.display = "flex";
     } else {
-        // अगर ब्राउज़र सपोर्ट नहीं कर रहा या प्रॉम्प्ट रेडी नहीं है, तो पुराना मैन्युअल पॉपअप दिखाएं
-        document.getElementById("installPopup").style.display = "flex";
+        alert("बेहतर अनुभव के लिए ब्राउज़र सेटिंग में जाकर 'Add to Home Screen' चुनें।");
     }
+}
+
+// 4. पॉपअप बंद करने का फंक्शन
+function closeInstallPopup() {
+    const modal = document.getElementById("installPopup");
+    if (modal) modal.style.display = "none";
+}
+
+// 5. सर्विस वर्कर (अगर फाइल बनाई है तो)
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(err => console.log("SW error:", err));
 }
     
 </script>
