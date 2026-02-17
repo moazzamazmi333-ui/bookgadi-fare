@@ -295,25 +295,29 @@ function sendWhatsApp(){
     
     if(!n || ph.length < 10) return alert("Sahi details bharein");
 
-    // वर्तमान समय और तारीख निकालने के लिए
     const now = new Date();
     const timeString = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
     const dateString = now.toLocaleDateString();
     
-    // Google Maps Route Link
+    // डेटाबेस में सेव करने के लिए ऑब्जेक्ट
+    const bookingData = {
+        name: n,
+        phone: ph,
+        pickup: p,
+        drop: d,
+        fare: f,
+        time: timeString,
+        date: dateString,
+        timestamp: Date.now()
+    };
+
+    // 1. Firebase में बुकिंग सेव करें
+    db.ref('bookings').push(bookingData);
+
+    // 2. व्हाट्सएप मैसेज तैयार करें
     const navLink = "https://www.google.com/maps/dir/?api=1&origin=" + encodeURIComponent(p) + "&destination=" + encodeURIComponent(d) + "&travelmode=driving";
     
-    // व्हाट्सएप मैसेज फॉर्मेट
-    const msg = `*BookGadi Booking Request*\n\n` +
-                `📅 *Date:* ${dateString}\n` +
-                `⏰ *Time:* ${timeString}\n` +
-                `👤 *Name:* ${n}\n` +
-                `📞 *Phone:* ${ph}\n` +
-                `💰 *Fare:* ${f}\n` +
-                `📍 *Pickup:* ${p}\n` +
-                `🏁 *Drop:* ${d}\n\n` +
-                `🗺️ *Route:* \n${navLink}\n\n` +
-                `📞 *Call:* tel:${ph}`;
+    const msg = `*BookGadi Booking Request*\n\n📅 *Date:* ${dateString}\n⏰ *Time:* ${timeString}\n👤 *Name:* ${n}\n📞 *Phone:* ${ph}\n💰 *Fare:* ${f}\n📍 *Pickup:* ${p}\n🏁 *Drop:* ${d}\n\n🗺️ *Route:* \n${navLink}\n\n📞 *Call:* tel:${ph}`;
     
     window.open(`https://wa.me/919651191446?text=${encodeURIComponent(msg)}`, "_blank");
 }
