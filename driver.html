@@ -13,7 +13,7 @@
         .status-box { background: #e8f5e9; padding: 15px; border-radius: 10px; display: none; border: 1px solid #c8e6c9; }
         .pulse { height: 10px; width: 10px; background: #2e7d32; border-radius: 50%; display: inline-block; margin-right: 5px; animation: blink 1s infinite; }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
-        #bookingList { margin-top: 15px; text-align: left; }
+        #bookingList { margin-top: 15px; text-align: left; max-height: 400px; overflow-y: auto; }
         .booking-card { background: #fff; border: 1px solid #eee; border-left: 4px solid #1a73e8; padding: 10px; border-radius: 8px; margin-bottom: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .fare-tag { color: #1e8e3e; font-weight: bold; float: right; font-size: 16px; }
     </style>
@@ -31,55 +31,37 @@
         <div id="statusSection" class="status-box">
             <p style="color:#2e7d32; margin: 0; font-weight: bold;"><span class="pulse"></span> BookGadi: You are Online</p>
             <h4 id="welcomeName" style="margin:5px 0;"></h4>
-            <div id="bookingList">
-                <p style="text-align:center; color:#888; font-size:12px;">Waiting for new bookings...</p>
-            </div>
+            <div id="bookingList">Loading bookings...</div>
             <button class="btn-off" onclick="stopDuty()">Duty Offline Karein</button>
         </div>
         <div id="log" style="color:red; font-size:12px; margin-top:10px;"></div>
     </div>
 
-    <audio id="beepSound" preload="auto">
-        <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg">
-    </audio>
+    <audio id="beepSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
 
     <script>
         const config = { databaseURL: "https://bookgadi-97c98-default-rtdb.firebaseio.com" };
         firebase.initializeApp(config);
         const db = firebase.database();
         let watchId = null;
+        let lastKnownBookingId = null;
         let isFirstLoad = true;
 
         window.onload = function() {
             const savedID = localStorage.getItem('activeDriverId');
             if (savedID) {
-                // अगर ऑटो-लोड हो रहा है, तो लॉगिन सेक्शन हटाओ पर बीप के लिए क्लिक मांगो
-                document.getElementById('loginSection').innerHTML = `<button class="btn-go" onclick="reconnect('${savedID}')">Click to Resume Duty</button>`;
+                document.getElementById('loginSection').innerHTML = `<button class="btn-go" onclick="reconnect('${savedID}')">Click to Restore Duty & History</button>`;
             }
         };
 
-        function reconnect(id) {
-            checkAndStart(id);
-        }
+        function reconnect(id) { checkAndStart(id); }
 
         async function initDuty() {
             const id = document.getElementById('driverInputID').value.trim();
             if(!id) return alert("Please enter ID");
-
-            // 1. Notification Permission
-            if ("Notification" in window) {
-                await Notification.requestPermission();
-            }
-
-            // 2. Sound Unlock (Sabse Jaruri)
+            if ("Notification" in window) await Notification.requestPermission();
             const audio = document.getElementById('beepSound');
-            audio.play().then(() => {
-                audio.pause();
-                audio.currentTime = 0;
-                checkAndStart(id);
-            }).catch(() => {
-                checkAndStart(id);
-            });
+            audio.play().then(() => { audio.pause(); checkAndStart(id); }).catch(() => checkAndStart(id));
         }
 
         function checkAndStart(inputID) {
@@ -98,24 +80,45 @@
             document.getElementById('statusSection').style.display = "block";
             document.getElementById('welcomeName').innerText = name;
 
-            // REAL-TIME LISTENER
-            const bookingRef = db.ref('bookings').limitToLast(1);
-            
-            bookingRef.on('child_added', (snapshot) => {
-                if (isFirstLoad) return; // पुरानी बुकिंग पर बीप न बजे
+            // --- History + Real-time Dono ke liye ---
+            db.ref('bookings').limitToLast(10).on('value', (snapshot) => {
+                const data = snapshot.val();
+                const list = document.getElementById('bookingList');
+                list.innerHTML = ""; 
 
-                const b = snapshot.val();
-                addBookingToUI(b);
-                playBeep();
-                triggerNotification(b.pickup, b.fare);
+                if (!data) {
+                    list.innerHTML = "<p style='text-align:center;color:#888;'>No bookings found.</p>";
+                    return;
+                }
+
+                const keys = Object.keys(data).reverse();
+                const newestId = keys[0];
+
+                keys.forEach(key => {
+                    const b = data[key];
+                    const item = document.createElement('div');
+                    item.className = 'booking-card';
+                    item.innerHTML = `<span class="fare-tag">₹${b.fare}</span>
+                                     <div>🕒 ${b.time || ''}</div>
+                                     <div>📍 <b>From:</b> ${b.pickup}</div>
+                                     <div>🏁 <b>To:</b> ${b.drop}</div>`;
+                    list.appendChild(item);
+                });
+
+                // --- Nayi Booking Check (Beep & Notif) ---
+                if (!isFirstLoad && lastKnownBookingId !== newestId) {
+                    playBeep();
+                    const newJob = data[newestId];
+                    if (Notification.permission === "granted") {
+                        new Notification("🚨 BookGadi: New Job!", { body: `Pickup: ${newJob.pickup}` });
+                    }
+                }
+
+                lastKnownBookingId = newestId;
+                isFirstLoad = false;
             });
 
-            // पहली बार डेटा लोड होने के बाद isFirstLoad को false करें
-            db.ref('bookings').once('value', () => {
-                setTimeout(() => { isFirstLoad = false; }, 2000);
-            });
-
-            // GPS
+            // GPS Update
             watchId = navigator.geolocation.watchPosition((pos) => {
                 db.ref('live_cars/' + id).update({
                     lat: pos.coords.latitude, lng: pos.coords.longitude,
@@ -124,33 +127,10 @@
             }, null, { enableHighAccuracy: true });
         }
 
-        function addBookingToUI(b) {
-            const list = document.getElementById('bookingList');
-            // "Waiting" टेक्स्ट हटाओ अगर पहली बुकिंग आई है
-            if(list.innerText.includes("Waiting")) list.innerHTML = "";
-
-            const item = document.createElement('div');
-            item.className = 'booking-card';
-            item.innerHTML = `<span class="fare-tag">₹${b.fare}</span>
-                             <div>🕒 ${b.time || 'Now'}</div>
-                             <div>📍 <b>From:</b> ${b.pickup}</div>
-                             <div>🏁 <b>To:</b> ${b.drop}</div>`;
-            list.insertBefore(item, list.firstChild);
-        }
-
         function playBeep() {
             const audio = document.getElementById('beepSound');
             audio.currentTime = 0;
-            audio.play().catch(e => console.log("Sound error:", e));
-        }
-
-        function triggerNotification(p, f) {
-            if (Notification.permission === "granted") {
-                new Notification("🚨 BookGadi New Job!", {
-                    body: `Pickup: ${p} | Fare: ₹${f}`,
-                    icon: "https://www.bookgadi.com/logo.png"
-                });
-            }
+            audio.play().catch(e => console.log("Sound error"));
         }
 
         function stopDuty() {
