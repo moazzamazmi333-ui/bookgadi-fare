@@ -7,186 +7,147 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        :root { --primary: #1a73e8; --success: #2e7d32; --danger: #d93025; --bg: #f8f9fa; }
+        :root { --primary: #1a73e8; --success: #2e7d32; --danger: #d93025; --bg: #f1f3f4; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 10px; }
         .container { max-width: 450px; margin: auto; }
-        .header { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center; margin-bottom: 15px; }
-        .header img { width: 120px; }
+        .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: center; }
+        .header img { width: 110px; margin-bottom: 10px; }
         
-        .input-group { margin-bottom: 15px; text-align: left; }
-        label { font-size: 13px; font-weight: 600; color: #666; display: block; margin-top: 10px; }
-        input, select { width: 100%; padding: 14px; margin-top: 5px; border: 1.5px solid #ddd; border-radius: 12px; box-sizing: border-box; font-size: 16px; }
+        input, select { width: 100%; padding: 14px; margin: 10px 0; border: 1px solid #ccc; border-radius: 10px; font-size: 16px; box-sizing: border-box; }
+        .btn-main { background: var(--primary); color: white; border: none; padding: 15px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; }
         
-        .btn { width: 100%; padding: 16px; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-danger { background: #fff; color: var(--danger); border: 1.5px solid var(--danger); margin-top: 20px; }
-
-        .status-card { background: white; border-radius: 20px; padding: 15px; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .online-badge { display: inline-flex; align-items: center; background: #e8f5e9; color: var(--success); padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; }
-        .pulse { height: 8px; width: 8px; background: var(--success); border-radius: 50%; margin-right: 8px; animation: blink 1.2s infinite; }
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
-
-        #bookingList { margin-top: 20px; padding-bottom: 50px; }
-        .b-card { background: white; border-radius: 16px; padding: 18px; margin-bottom: 15px; border: 1px solid #eee; position: relative; border-left: 5px solid var(--primary); text-align: left; }
-        .b-fare { color: var(--success); font-size: 20px; font-weight: 800; float: right; }
-        .b-date { font-size: 12px; color: #777; margin-bottom: 8px; display: block; }
-        .b-loc { font-size: 14px; margin: 5px 0; color: #333; line-height: 1.4; }
-        .b-footer { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #eee; display: flex; justify-content: space-between; align-items: center; }
-        .call-btn { background: var(--primary); color: white; text-decoration: none; padding: 8px 15px; border-radius: 8px; font-size: 13px; font-weight: bold; }
+        .status-box { display: none; margin-top: 10px; }
+        .online-tag { background: #e8f5e9; color: var(--success); padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; display: inline-block; margin-bottom: 10px; }
         
-        .no-data { padding: 40px 20px; color: #999; font-size: 14px; text-align: center; }
+        #bookingList { margin-top: 20px; text-align: left; }
+        .b-item { background: white; border-radius: 15px; padding: 15px; margin-bottom: 15px; border-left: 6px solid var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .b-fare { float: right; color: var(--success); font-weight: 800; font-size: 18px; }
+        .b-info { font-size: 14px; margin: 5px 0; color: #333; }
+        .call-btn { background: var(--primary); color: white; text-decoration: none; padding: 8px 15px; border-radius: 8px; font-size: 13px; float: right; margin-top: -5px; }
+        
+        .no-data { padding: 30px; color: #777; font-size: 14px; text-align: center; background: #fff; border-radius: 15px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="header">
+    <div class="card" id="loginUI">
         <img src="https://www.bookgadi.com/logo.png">
-        <div id="loginSection">
-            <h3 style="margin-top:10px;">Driver Duty Panel</h3>
-            <input type="text" id="driverInputID" placeholder="Enter Your Driver ID">
-            <button class="btn btn-primary" style="margin-top:15px;" onclick="verifyDriver()">START DUTY</button>
-        </div>
+        <h3>Driver Login</h3>
+        <input type="text" id="driverID" placeholder="Enter ID (Example: BG01)">
+        <button class="btn-main" onclick="login()">Login</button>
     </div>
 
-    <div id="statusSection" class="status-card">
-        <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <div class="online-badge"><span class="pulse"></span> LIVE DUTY</div>
-            <div id="welcomeName" style="font-size: 13px; font-weight: bold; color: #1a73e8;"></div>
-        </div>
-
-        <div class="input-group">
-            <label>Current Booking Area</label>
-            <select id="areaFilter" onchange="loadBookings()">
-                <option value="ALL">Show All Areas (Everything)</option>
-                <option value="azam">Azamgarh (Smart Search)</option>
-                <option value="lucknow">Lucknow Area</option>
-                <option value="vns">Varanasi Area</option>
-                <option value="mau">Mau Area</option>
+    <div id="appUI" class="status-box">
+        <div class="card">
+            <div class="online-tag">● ONLINE DUTY</div>
+            <h4 id="dName" style="margin:5px 0;"></h4>
+            
+            <label style="font-size: 12px; color: #666; display: block; text-align: left;">Filter Your City:</label>
+            <select id="cityFilter" onchange="showHistory()">
+                <option value="ALL">Show All (सब देखें)</option>
+                <option value="AZAM">Azamgarh (Smart)</option>
+                <option value="LUCK">Lucknow</option>
+                <option value="VAR">Varanasi</option>
             </select>
         </div>
 
-        <div id="bookingList">Loading your history...</div>
+        <div id="bookingList">Loading bookings...</div>
         
-        <button class="btn btn-danger" onclick="stopDuty()">LOGOUT / GO OFFLINE</button>
+        <button onclick="logout()" style="background:none; border:none; color:red; margin-top:20px; font-size:14px; cursor:pointer;">Logout & Offline</button>
     </div>
 </div>
 
-<audio id="beepSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
+<audio id="alert" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
 
 <script>
     const config = { databaseURL: "https://bookgadi-97c98-default-rtdb.firebaseio.com" };
     firebase.initializeApp(config);
     const db = firebase.database();
-    
-    let currentID = "";
-    let lastTopId = null;
-    let isInitialLoad = true;
+
+    let myID = "";
+    let lastId = null;
 
     window.onload = function() {
-        const sid = localStorage.getItem('bg_id');
-        if (sid) verifyDriver(sid);
+        if(localStorage.getItem('bg_id')) login(localStorage.getItem('bg_id'));
     };
 
-    function verifyDriver(idFromStorage) {
-        const id = idFromStorage || document.getElementById('driverInputID').value.trim();
-        if(!id) return;
+    function login(savedId) {
+        myID = savedId || document.getElementById('driverID').value.trim();
+        if(!myID) return;
 
-        db.ref('live_cars/' + id).once('value').then(snap => {
-            if(snap.exists()){
-                currentID = id;
-                document.getElementById('welcomeName').innerText = "Driver: " + snap.val().name;
-                localStorage.setItem('bg_id', id);
-                document.getElementById('loginSection').style.display = "none";
-                document.getElementById('statusSection').style.display = "block";
-                loadBookings();
+        db.ref('live_cars/' + myID).once('value').then(snap => {
+            if(snap.exists()) {
+                localStorage.setItem('bg_id', myID);
+                document.getElementById('loginUI').style.display = "none";
+                document.getElementById('appUI').style.display = "block";
+                document.getElementById('dName').innerText = snap.val().name;
+                showHistory();
                 startGPS();
-            } else {
-                alert("Invalid ID!");
-            }
+            } else { alert("Wrong ID!"); }
         });
     }
 
-    function loadBookings() {
-        const filter = document.getElementById('areaFilter').value.toLowerCase();
-
-        db.ref('bookings').limitToLast(150).on('value', snap => {
+    function showHistory() {
+        const filter = document.getElementById('cityFilter').value;
+        
+        db.ref('bookings').limitToLast(100).on('value', snap => {
             const list = document.getElementById('bookingList');
             list.innerHTML = "";
             const data = snap.val();
-            
-            if(!data) {
-                list.innerHTML = "<div class='no-data'>No database records found.</div>";
-                return;
-            }
+            if(!data) { list.innerHTML = "<div class='no-data'>No data found.</div>"; return; }
 
             const keys = Object.keys(data).reverse();
-            let count = 0;
-            let topK = null;
+            let found = 0;
 
             keys.forEach(k => {
                 const b = data[k];
-                const pickup = (b.pickup || "").toLowerCase();
-                
-                let isMatch = false;
+                const pickup = (b.pickup || "").toUpperCase();
+                let match = false;
 
-                if (filter === "all") {
-                    isMatch = true;
-                } else if (filter === "azam") {
-                    // Super Flexible Azamgarh Match
-                    if (pickup.includes("azam") || pickup.includes("azm") || pickup.includes("aza")) {
-                        isMatch = true;
-                    }
-                } else {
-                    // Other cities simple match
-                    if (pickup.includes(filter)) isMatch = true;
+                if(filter === "ALL") match = true;
+                else if(filter === "AZAM") {
+                    // आज़मगढ़ के लिए सबसे आसान मिलान (Universal Matching)
+                    if(pickup.includes("AZAM") || pickup.includes("AZM") || pickup.includes("AZA") || pickup.includes("AMGARH")) match = true;
+                } else if(filter === "LUCK") {
+                    if(pickup.includes("LUCK") || pickup.includes("LKO")) match = true;
                 }
 
-                if(isMatch) {
-                    if(!topK) topK = k;
-                    count++;
+                if(match) {
+                    found++;
                     const div = document.createElement('div');
-                    div.className = "b-card";
+                    div.className = "b-item";
                     div.innerHTML = `
                         <span class="b-fare">₹${b.fare}</span>
-                        <span class="b-date">📅 ${b.date || ''} | ⏰ ${b.time || ''}</span>
-                        <div class="b-loc">📍 <b>Pick:</b> ${b.pickup}</div>
-                        <div class="b-loc">🏁 <b>Drop:</b> ${b.drop}</div>
-                        <div class="b-footer">
-                            <span style="font-weight:bold; font-size:14px;">👤 ${b.name}</span>
-                            <a href="tel:${b.phone}" class="call-btn">📞 Call Now</a>
+                        <div style="font-size:11px; color:var(--danger); font-weight:bold;">${b.date} | ${b.time}</div>
+                        <div class="b-info"><b>From:</b> ${b.pickup}</div>
+                        <div class="b-info"><b>To:</b> ${b.drop}</div>
+                        <div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px;">
+                            <span style="font-size:13px; font-weight:bold;">${b.name}</span>
+                            <a href="tel:${b.phone}" class="call-btn">Call Now</a>
                         </div>
                     `;
                     list.appendChild(div);
                 }
             });
 
-            if(!isInitialLoad && topK && topK !== lastTopId) {
-                document.getElementById('beepSound').play().catch(()=>{});
-            }
-            lastTopId = topK;
-            isInitialLoad = false;
-
-            if(count === 0) {
-                list.innerHTML = `<div class='no-data'>No bookings found for "${filter}".<br>Try "Show All Areas" to confirm data.</div>`;
-            }
+            if(found === 0) list.innerHTML = `<div class='no-data'>No bookings found for this area.</div>`;
         });
     }
 
     function startGPS() {
         navigator.geolocation.watchPosition(pos => {
-            db.ref('live_cars/' + currentID).update({
+            db.ref('live_cars/' + myID).update({
                 lat: pos.coords.latitude, lng: pos.coords.longitude,
-                status: "online", last_seen: Date.now()
+                status: "online", last: Date.now()
             });
-        }, null, { enableHighAccuracy: true });
+        });
     }
 
-    function stopDuty() {
-        db.ref('live_cars/' + currentID).update({ status: "offline" }).then(() => {
-            localStorage.clear();
-            location.reload();
-        });
+    function logout() {
+        db.ref('live_cars/' + myID).update({ status: "offline" });
+        localStorage.clear();
+        location.reload();
     }
 </script>
 </body>
