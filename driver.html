@@ -14,10 +14,10 @@
         .header img { width: 120px; }
         
         .input-group { margin-bottom: 15px; text-align: left; }
-        label { font-size: 13px; font-weight: 600; color: #666; }
+        label { font-size: 13px; font-weight: 600; color: #666; display: block; margin-top: 10px; }
         input, select { width: 100%; padding: 14px; margin-top: 5px; border: 1.5px solid #ddd; border-radius: 12px; box-sizing: border-box; font-size: 16px; }
         
-        .btn { width: 100%; padding: 16px; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .btn { width: 100%; padding: 16px; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; }
         .btn-primary { background: var(--primary); color: white; }
         .btn-danger { background: #fff; color: var(--danger); border: 1.5px solid var(--danger); margin-top: 20px; }
 
@@ -27,12 +27,14 @@
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
 
         #bookingList { margin-top: 20px; padding-bottom: 50px; }
-        .b-card { background: white; border-radius: 16px; padding: 18px; margin-bottom: 15px; border: 1px solid #eee; position: relative; border-left: 5px solid var(--primary); }
+        .b-card { background: white; border-radius: 16px; padding: 18px; margin-bottom: 15px; border: 1px solid #eee; position: relative; border-left: 5px solid var(--primary); text-align: left; }
         .b-fare { color: var(--success); font-size: 20px; font-weight: 800; float: right; }
         .b-date { font-size: 12px; color: #777; margin-bottom: 8px; display: block; }
-        .b-loc { font-size: 14px; margin: 5px 0; color: #333; }
+        .b-loc { font-size: 14px; margin: 5px 0; color: #333; line-height: 1.4; }
         .b-footer { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #eee; display: flex; justify-content: space-between; align-items: center; }
-        .call-btn { background: var(--primary); color: white; text-decoration: none; padding: 8px 15px; border-radius: 8px; font-size: 13px; }
+        .call-btn { background: var(--primary); color: white; text-decoration: none; padding: 8px 15px; border-radius: 8px; font-size: 13px; font-weight: bold; }
+        
+        .no-data { padding: 40px 20px; color: #999; font-size: 14px; text-align: center; }
     </style>
 </head>
 <body>
@@ -41,30 +43,32 @@
     <div class="header">
         <img src="https://www.bookgadi.com/logo.png">
         <div id="loginSection">
-            <input type="text" id="driverInputID" placeholder="Enter Driver ID">
-            <button class="btn btn-primary" style="margin-top:10px;" onclick="verifyDriver()">Login</button>
+            <h3 style="margin-top:10px;">Driver Duty Panel</h3>
+            <input type="text" id="driverInputID" placeholder="Enter Your Driver ID">
+            <button class="btn btn-primary" style="margin-top:15px;" onclick="verifyDriver()">START DUTY</button>
         </div>
     </div>
 
     <div id="statusSection" class="status-card">
         <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <div class="online-badge"><span class="pulse"></span> Online</div>
-            <div id="welcomeName" style="font-size: 13px; font-weight: bold;"></div>
+            <div class="online-badge"><span class="pulse"></span> LIVE DUTY</div>
+            <div id="welcomeName" style="font-size: 13px; font-weight: bold; color: #1a73e8;"></div>
         </div>
 
         <div class="input-group">
-            <label>Working City</label>
+            <label>Current Booking Area</label>
             <select id="areaFilter" onchange="loadBookings()">
-                <option value="ALL">All Areas (All Bookings)</option>
-                <option value="azam">Azamgarh</option>
-                <option value="luck">Lucknow</option>
-                <option value="vara">Varanasi</option>
-                <option value="mau">Mau</option>
+                <option value="ALL">Show All Areas (Everything)</option>
+                <option value="azam">Azamgarh (Smart Search)</option>
+                <option value="lucknow">Lucknow Area</option>
+                <option value="vns">Varanasi Area</option>
+                <option value="mau">Mau Area</option>
             </select>
         </div>
 
-        <div id="bookingList">Loading...</div>
-        <button class="btn btn-danger" onclick="stopDuty()">Logout / Offline</button>
+        <div id="bookingList">Loading your history...</div>
+        
+        <button class="btn btn-danger" onclick="stopDuty()">LOGOUT / GO OFFLINE</button>
     </div>
 </div>
 
@@ -77,6 +81,7 @@
     
     let currentID = "";
     let lastTopId = null;
+    let isInitialLoad = true;
 
     window.onload = function() {
         const sid = localStorage.getItem('bg_id');
@@ -90,26 +95,30 @@
         db.ref('live_cars/' + id).once('value').then(snap => {
             if(snap.exists()){
                 currentID = id;
-                document.getElementById('welcomeName').innerText = snap.val().name;
+                document.getElementById('welcomeName').innerText = "Driver: " + snap.val().name;
                 localStorage.setItem('bg_id', id);
                 document.getElementById('loginSection').style.display = "none";
                 document.getElementById('statusSection').style.display = "block";
                 loadBookings();
+                startGPS();
             } else {
-                alert("ID Not Found!");
+                alert("Invalid ID!");
             }
         });
     }
 
     function loadBookings() {
-        // Ab hum sirf pehle 4 characters search karenge (Smart Match)
         const filter = document.getElementById('areaFilter').value.toLowerCase();
 
-        db.ref('bookings').limitToLast(100).on('value', snap => {
+        db.ref('bookings').limitToLast(150).on('value', snap => {
             const list = document.getElementById('bookingList');
             list.innerHTML = "";
             const data = snap.val();
-            if(!data) return list.innerHTML = "No bookings.";
+            
+            if(!data) {
+                list.innerHTML = "<div class='no-data'>No database records found.</div>";
+                return;
+            }
 
             const keys = Object.keys(data).reverse();
             let count = 0;
@@ -119,32 +128,58 @@
                 const b = data[k];
                 const pickup = (b.pickup || "").toLowerCase();
                 
-                // Flexible match: Agar pickup mein 'azam' hai toh Azamgarh filter mein dikhega
-                if(filter === "all" || pickup.includes(filter)) {
+                let isMatch = false;
+
+                if (filter === "all") {
+                    isMatch = true;
+                } else if (filter === "azam") {
+                    // Super Flexible Azamgarh Match
+                    if (pickup.includes("azam") || pickup.includes("azm") || pickup.includes("aza")) {
+                        isMatch = true;
+                    }
+                } else {
+                    // Other cities simple match
+                    if (pickup.includes(filter)) isMatch = true;
+                }
+
+                if(isMatch) {
                     if(!topK) topK = k;
                     count++;
                     const div = document.createElement('div');
                     div.className = "b-card";
                     div.innerHTML = `
                         <span class="b-fare">₹${b.fare}</span>
-                        <span class="b-date">📅 ${b.date} | ⏰ ${b.time}</span>
-                        <div class="b-loc">📍 <b>From:</b> ${b.pickup}</div>
-                        <div class="b-loc">🏁 <b>To:</b> ${b.drop}</div>
+                        <span class="b-date">📅 ${b.date || ''} | ⏰ ${b.time || ''}</span>
+                        <div class="b-loc">📍 <b>Pick:</b> ${b.pickup}</div>
+                        <div class="b-loc">🏁 <b>Drop:</b> ${b.drop}</div>
                         <div class="b-footer">
-                            <span>👤 ${b.name}</span>
-                            <a href="tel:${b.phone}" class="call-btn">📞 Call</a>
+                            <span style="font-weight:bold; font-size:14px;">👤 ${b.name}</span>
+                            <a href="tel:${b.phone}" class="call-btn">📞 Call Now</a>
                         </div>
                     `;
                     list.appendChild(div);
                 }
             });
 
-            if(lastTopId && topK !== lastTopId) {
+            if(!isInitialLoad && topK && topK !== lastTopId) {
                 document.getElementById('beepSound').play().catch(()=>{});
             }
             lastTopId = topK;
-            if(count === 0) list.innerHTML = "<p style='color:#888;'>No bookings for this area.</p>";
+            isInitialLoad = false;
+
+            if(count === 0) {
+                list.innerHTML = `<div class='no-data'>No bookings found for "${filter}".<br>Try "Show All Areas" to confirm data.</div>`;
+            }
         });
+    }
+
+    function startGPS() {
+        navigator.geolocation.watchPosition(pos => {
+            db.ref('live_cars/' + currentID).update({
+                lat: pos.coords.latitude, lng: pos.coords.longitude,
+                status: "online", last_seen: Date.now()
+            });
+        }, null, { enableHighAccuracy: true });
     }
 
     function stopDuty() {
