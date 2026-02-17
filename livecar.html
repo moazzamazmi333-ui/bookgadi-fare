@@ -321,6 +321,36 @@ function sendWhatsApp(){
     
     window.open(`https://wa.me/919651191446?text=${encodeURIComponent(msg)}`, "_blank");
 }
+let deferredPrompt;
+
+// 1. ब्राउज़र के डिफॉल्ट प्रॉम्प्ट को रोकें और उसे 'deferredPrompt' में सेव करें
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    // यहाँ आप 'Install Now' बटन को दिखा सकते हैं अगर वो पहले से छुपा हुआ हो
+});
+
+// 2. 'Install Now' बटन के फंक्शन को अपडेट करें
+function openInstallPopup() {
+    if (deferredPrompt) {
+        // ब्राउज़र का असली इंस्टॉल प्रॉम्प्ट दिखाएं
+        deferredPrompt.prompt();
+        
+        // यूजर के फैसले का इंतज़ार करें
+        deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+                console.log('User accepted the install prompt');
+            } else {
+                console.log('User dismissed the install prompt');
+            }
+            deferredPrompt = null; // एक बार इस्तेमाल के बाद इसे खाली कर दें
+        });
+    } else {
+        // अगर ब्राउज़र सपोर्ट नहीं कर रहा या प्रॉम्प्ट रेडी नहीं है, तो पुराना मैन्युअल पॉपअप दिखाएं
+        document.getElementById("installPopup").style.display = "flex";
+    }
+}
+    
 </script>
 
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8fFUPeGfUy8Wwh-mQ_d3fbGZzKBy7VwM&libraries=places&callback=initMap" async defer></script>
