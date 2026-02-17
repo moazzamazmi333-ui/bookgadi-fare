@@ -108,6 +108,11 @@ select { width: 100%; padding: 14px; border-radius: 12px; border: 1.5px solid #e
 .fare-card { padding: 18px; background: #f0f7ff; border-radius: 15px; border-left: 6px solid var(--primary); margin-top: 20px; }
 .info-note { font-size: 11px; color: #666; margin-top: 10px; background: #fff9e6; padding: 10px; border-radius: 10px; border: 1px dashed var(--warning); }
 #userForm { display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; }
+
+/* Driver Section Styles */
+.driver-entry { text-align: center; margin-top: 20px; font-size: 13px; }
+.driver-entry a { color: var(--primary); text-decoration: none; font-weight: bold; }
+#driverPanel { display: none; margin-top: 20px; padding: 15px; border: 2px solid var(--primary); border-radius: 15px; background: #f0f4ff; }
 </style>
 </head>
 <body>
@@ -126,33 +131,47 @@ select { width: 100%; padding: 14px; border-radius: 12px; border: 1.5px solid #e
     </div>
 
     <div class="content">
-        <input id="pickup" class="input-box" placeholder="Kahan se? (Pickup Location)">
-        <button class="btn-loc" id="locBtn" onclick="useMyLocation()">📍 Current Location Use Karein</button>
-        <input id="drop" class="input-box" placeholder="Kahan tak? (Drop Location)">
-        
-        <select id="vehicle">
-            <option value="12">🚙 SUV (₹12/km)</option>
-            <option value="10">🚕 Sedan (₹10/km)</option>
-        </select>
+        <div id="customerSection">
+            <input id="pickup" class="input-box" placeholder="Kahan se? (Pickup Location)">
+            <button class="btn-loc" id="locBtn" onclick="useMyLocation()">📍 Current Location Use Karein</button>
+            <input id="drop" class="input-box" placeholder="Kahan tak? (Drop Location)">
+            
+            <select id="vehicle">
+                <option value="12">🚙 SUV (₹12/km)</option>
+                <option value="10">🚕 Sedan (₹10/km)</option>
+            </select>
 
-        <div id="tripOptions" class="trip-type">
-            <label><input type="radio" name="trip" id="oneway" checked onchange="calculateFare()"> One Way</label>
-            <label><input type="radio" name="trip" id="roundtrip" onchange="calculateFare()"> Round Trip</label>
+            <div id="tripOptions" class="trip-type">
+                <label><input type="radio" name="trip" id="oneway" checked onchange="calculateFare()"> One Way</label>
+                <label><input type="radio" name="trip" id="roundtrip" onchange="calculateFare()"> Round Trip</label>
+            </div>
+
+            <button class="main-btn btn-calc" onclick="calculateFare()">Kiraaya Dekhein</button>
+            
+            <div id="result"></div>
+            <button id="waBtn" class="main-btn btn-wa" onclick="openBooking()" style="display:none">💬 Booking WhatsApp Karein</button>
+
+            <div id="userForm">
+                <input id="custName" class="input-box" placeholder="Aapka Naam">
+                <input id="custPhone" class="input-box" type="tel" placeholder="Mobile Number (10 digit)">
+                <div style="display: flex; gap: 10px;">
+                    <input id="rideDate" class="input-box" type="date" style="flex: 1;">
+                    <input id="rideTime" class="input-box" type="time" style="flex: 1;">
+                </div>
+                <button class="main-btn btn-wa" onclick="sendWhatsApp()">Confirm & WhatsApp Book Karein</button>
+            </div>
+
+            <div class="driver-entry">
+                ड्राइवर हैं? <a href="#" onclick="showDriverPanel()">यहाँ से ऑनलाइन आएं</a>
+            </div>
         </div>
 
-        <button class="main-btn btn-calc" onclick="calculateFare()">Kiraaya Dekhein</button>
-        
-        <div id="result"></div>
-        <button id="waBtn" class="main-btn btn-wa" onclick="openBooking()" style="display:none">💬 Booking WhatsApp Karein</button>
-
-        <div id="userForm">
-            <input id="custName" class="input-box" placeholder="Aapka Naam">
-            <input id="custPhone" class="input-box" type="tel" placeholder="Mobile Number (10 digit)">
-            <div style="display: flex; gap: 10px;">
-                <input id="rideDate" class="input-box" type="date" style="flex: 1;">
-                <input id="rideTime" class="input-box" type="time" style="flex: 1;">
-            </div>
-            <button class="main-btn btn-wa" onclick="sendWhatsApp()">Confirm & WhatsApp Book Karein</button>
+        <div id="driverPanel">
+            <h4 style="margin-bottom:10px; color:var(--primary);">Driver Partner Panel</h4>
+            <input id="driverName" class="input-box" placeholder="आपका नाम">
+            <input id="driverID" class="input-box" placeholder="गाड़ी नंबर या ID">
+            <button id="onlineBtn" class="main-btn btn-wa" onclick="toggleDriverOnline()">Go Online (Start Live)</button>
+            <button class="btn-loc" style="margin-top:10px;" onclick="location.reload()">Back to Booking</button>
         </div>
     </div>
 </div>
@@ -166,6 +185,10 @@ let map, geocoder, pickupAC, dropAC, directionsRenderer, directionsService, info
 let markers = {};
 const LKO = { lat: 26.8467, lng: 80.9462 };
 const AZM = { lat: 26.0739, lng: 83.1859 };
+
+// Driver tracking variables
+let isOnline = false;
+let watchID = null;
 
 function initMap(){
     document.getElementById('rideDate').valueAsDate = new Date();
@@ -225,10 +248,8 @@ function trackCars() {
         }
 
         let onlineCount = 0;
-
         Object.keys(cars).forEach(id => {
             const data = cars[id];
-            
             if (data.status === "online" && data.lat && data.lng) {
                 onlineCount++;
                 const pos = { lat: parseFloat(data.lat), lng: parseFloat(data.lng) };
@@ -236,8 +257,7 @@ function trackCars() {
 
                 if(!markers[id]) {
                     markers[id] = new google.maps.Marker({
-                        position: pos, 
-                        map: map,
+                        position: pos, map: map,
                         label: { text: driverName, color: "black", fontSize: "11px", fontWeight: "bold" },
                         icon: { 
                             url: "https://static.wixstatic.com/media/843689_497878e241e348adbd167a8cc7462f1b~mv2.png", 
@@ -245,35 +265,65 @@ function trackCars() {
                             labelOrigin: new google.maps.Point(16, -10)
                         }
                     });
-
                     markers[id].addListener("click", () => {
-                        const currentData = snap.val()[id]; 
-                        infoWindow.setContent(`
-                            <div style="padding:10px; line-height:1.5;">
-                                <strong style="color:#1a73e8;">BookGadi Live Partner</strong><br>
-                                <b>Name:</b> ${currentData.name || "Available"}<br>
-                                <b>ID:</b> ${id}<br>
-                                <span style="color:green;">● Active Now</span>
-                            </div>
-                        `);
+                        infoWindow.setContent(`<div style="padding:10px;"><strong>${driverName}</strong><br>Status: Active</div>`);
                         infoWindow.open(map, markers[id]);
                     });
-
                 } else { 
                     markers[id].setPosition(pos); 
                     if (markers[id].getMap() === null) markers[id].setMap(map);
                 }
-            } else {
-                if (markers[id]) {
-                    markers[id].setMap(null);
-                }
+            } else if (markers[id]) {
+                markers[id].setMap(null);
             }
         });
-
         document.getElementById('carStatus').innerText = "Live: " + onlineCount;
     });
 }
 
+// --- Driver Platform Logic ---
+function showDriverPanel() {
+    document.getElementById("customerSection").style.display = "none";
+    document.getElementById("driverPanel").style.display = "block";
+}
+
+function toggleDriverOnline() {
+    const dName = document.getElementById("driverName").value.trim();
+    const dID = document.getElementById("driverID").value.trim().replace(/[^a-zA-Z0-9]/g, "");
+
+    if(!dName || !dID) return alert("नाम और ID भरें!");
+
+    if(!isOnline) {
+        // Go Online
+        if (navigator.geolocation) {
+            isOnline = true;
+            document.getElementById("onlineBtn").innerText = "Stop Live (Go Offline)";
+            document.getElementById("onlineBtn").style.background = "#ea4335";
+            
+            watchID = navigator.geolocation.watchPosition((pos) => {
+                db.ref('live_cars/' + dID).set({
+                    name: dName,
+                    lat: pos.coords.latitude,
+                    lng: pos.coords.longitude,
+                    status: "online",
+                    lastUpdate: Date.now()
+                });
+            }, (err) => console.log(err), { enableHighAccuracy: true });
+            
+            alert("आप लाइव आ चुके हैं! बुकिंग के लिए फोन ऑन रखें।");
+        }
+    } else {
+        // Go Offline
+        isOnline = false;
+        if(watchID) navigator.geolocation.clearWatch(watchID);
+        db.ref('live_cars/' + dID).update({ status: "offline" });
+        document.getElementById("onlineBtn").innerText = "Go Online (Start Live)";
+        document.getElementById("onlineBtn").style.background = "var(--success)";
+        alert("आप ऑफलाइन हो गए हैं।");
+    }
+}
+
+// --- Existing Functions (Unchanged) ---
 function useMyLocation(){
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition((pos) => {
@@ -314,7 +364,6 @@ function calculateFare(){
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 deferredPrompt.userChoice.then((choice) => {
-                    if (choice.outcome === 'accepted') console.log("Installed");
                     deferredPrompt = null;
                 });
             }
