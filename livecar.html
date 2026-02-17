@@ -185,43 +185,41 @@ function trackCars() {
         if(!cars) { 
             document.getElementById('carStatus').innerText = "Live: 0";
             for(let id in markers) markers[id].setMap(null);
-            markers = {}; return; 
+            markers = {}; 
+            return; 
         }
 
-        let onlineCount = 0; // ऑनलाइन ड्राइवर गिनने के लिए
+        let onlineCount = 0;
 
         Object.keys(cars).forEach(id => {
             const data = cars[id];
             
-            // केवल तभी दिखाएं जब ड्राइवर ऑनलाइन हो और लोकेशन मौजूद हो
             if (data.status === "online" && data.lat && data.lng) {
                 onlineCount++;
-                const pos = { lat: data.lat, lng: data.lng };
-                const driverName = data.name ? data.name : "Driver-" + id.slice(-3);
+                const pos = { lat: parseFloat(data.lat), lng: parseFloat(data.lng) };
+                const driverName = data.name ? data.name : "Partner";
 
                 if(!markers[id]) {
+                    // 1. अगर मार्कर नहीं है तो नया बनाएँ
                     markers[id] = new google.maps.Marker({
                         position: pos, 
                         map: map,
-                        label: { 
-                            text: driverName, 
-                            color: "black", 
-                            fontSize: "12px", 
-                            fontWeight: "bold" 
-                        },
+                        label: { text: driverName, color: "black", fontSize: "11px", fontWeight: "bold" },
                         icon: { 
                             url: "https://static.wixstatic.com/media/843689_497878e241e348adbd167a8cc7462f1b~mv2.png", 
                             scaledSize: new google.maps.Size(32,32),
-                            labelOrigin: new google.maps.Point(16, -12)
+                            labelOrigin: new google.maps.Point(16, -10)
                         }
                     });
 
+                    // --- POPUP (InfoWindow) यहाँ वापस जोड़ा गया है ---
                     markers[id].addListener("click", () => {
+                        // ताज़ा डेटा दिखाने के लिए क्लिक पर डेटाबेस से नाम उठाएं
+                        const currentData = snap.val()[id]; 
                         infoWindow.setContent(`
-                            <div style="padding:10px; min-width:150px;">
-                                <strong style="color:#1a73e8; font-size:14px;">BookGadi Partner</strong><br>
-                                <hr style="margin:5px 0; border:0; border-top:1px solid #eee;">
-                                <b>Name:</b> ${data.name || "Available"}<br>
+                            <div style="padding:10px; line-height:1.5;">
+                                <strong style="color:#1a73e8;">BookGadi Live Partner</strong><br>
+                                <b>Name:</b> ${currentData.name || "Available"}<br>
                                 <b>ID:</b> ${id}<br>
                                 <span style="color:green;">● Active Now</span>
                             </div>
@@ -230,20 +228,18 @@ function trackCars() {
                     });
 
                 } else { 
+                    // 2. अगर मार्कर पहले से है, तो सिर्फ उसकी जगह बदलें (ताकि कार मूव हो)
                     markers[id].setPosition(pos); 
-                    markers[id].setLabel({ text: driverName, color: "black", fontSize: "12px", fontWeight: "bold" });
-                    // अगर छुपा हुआ था तो वापस दिखाएं
                     if (markers[id].getMap() === null) markers[id].setMap(map);
                 }
             } else {
-                // अगर ड्राइवर ऑफलाइन है तो उसका आइकॉन मैप से हटा दें
+                // 3. ऑफलाइन होने पर हटा दें
                 if (markers[id]) {
                     markers[id].setMap(null);
                 }
             }
         });
 
-        // केवल ऑनलाइन ड्राइवरों की संख्या दिखाएं
         document.getElementById('carStatus').innerText = "Live: " + onlineCount;
     });
 }
