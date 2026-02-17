@@ -321,49 +321,75 @@ function sendWhatsApp(){
     
     window.open(`https://wa.me/919651191446?text=${encodeURIComponent(msg)}`, "_blank");
 }
-// 1. प्रॉम्प्ट को होल्ड करने के लिए वेरिएबल
-let deferredPrompt;
+// ------------------ PWA Install Logic (सीधा "Kiraaya Dekhein" बटन से) ------------------
+let deferredPrompt = null;
 
-// 2. ब्राउज़र के इंस्टॉल इवेंट को पकड़ना
+// 1. Browser से prompt capture करो (ये पहले से तुम्हारे कोड में है, लेकिन confirm)
 window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
+    e.preventDefault();  // Auto popup रोक दो
     deferredPrompt = e;
-    console.log("Install prompt ready!");
+    console.log("✅ Install prompt ready! अब 'Kiraaya Dekhein' बटन पर दिखेगा");
 });
 
-// 3. मुख्य फंक्शन - जो बटन क्लिक पर चलेगा
-function openInstallPopup() {
-    console.log("Button Clicked!"); // चेक करने के लिए कि बटन काम कर रहा है
-    
-    // अगर ब्राउज़र ऑटो-प्रॉम्प्ट के लिए तैयार है
-    if (deferredPrompt) {
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then((choiceResult) => {
-            if (choiceResult.outcome === 'accepted') {
-                console.log('User installed the app');
+// 2. calculateFare() function में prompt ट्रिगर करो (तुम्हारा calculateFare function ढूंढो और इसमें ये जोड़ो)
+function calculateFare() {
+    // तुम्हारा पुराना कोड यहाँ वैसा ही रहेगा...
+    const p = document.getElementById("pickup").value;
+    const d = document.getElementById("drop").value;
+    if(!p || !d) return alert("Please enter locations");
+
+    directionsService.route({ origin: p, destination: d, travelMode: 'DRIVING' }, (res, status) => {
+        if (status === 'OK') {
+            directionsRenderer.setDirections(res);
+            const leg = res.routes[0].legs[0];
+            const km = leg.distance.value / 1000;
+            const time = leg.duration.text;
+            const rate = Number(document.getElementById("vehicle").value);
+            const isRound = document.getElementById("roundtrip").checked;
+            let fare = isRound ? Math.round(km * rate * 2 + 300) : Math.round(250 + km * rate);
+            
+            document.getElementById("result").innerHTML = `
+                <div class="fare-card">
+                    <b>Distance:</b> ${km.toFixed(1)} km | <b>Time:</b> ${time}<br>
+                    <b>Est. Fare:</b> <span id="finalFare" style="color:var(--primary); font-size:22px;">₹${fare}</span>
+                    <div class="info-note">⚠️ Toll, State Tax & Parking extra as per actual.</div>
+                </div>`;
+            document.getElementById("waBtn").style.display = "block";
+
+            // ★★★ नया कोड: Kiraaya Dekhein क्लिक पर Install Popup दिखाओ ★★★
+            if (deferredPrompt) {
+                console.log("Showing PWA install prompt on Kiraaya Dekhein click!");
+                deferredPrompt.prompt();  // Native popup खोलो
+
+                deferredPrompt.userChoice.then((choice) => {
+                    if (choice.outcome === 'accepted') {
+                        console.log("User ने ऐप install कर लिया!");
+                        // Optional: alert("धन्यवाद! ऐप होम स्क्रीन पर जुड़ गया ✓");
+                    } else {
+                        console.log("User ने cancel किया");
+                    }
+                    deferredPrompt = null;  // एक बार इस्तेमाल हो गया, अब null
+                }).catch(err => {
+                    console.error("Prompt error:", err);
+                });
+            } else {
+                console.log("Install prompt available नहीं है (शायद criteria पूरी नहीं)");
             }
-            deferredPrompt = null;
-        });
-    } 
-    
-    // ब्राउज़र सपोर्ट करे या न करे, पॉपअप को हमेशा दिखाओ (Force Show)
-    const modal = document.getElementById("installPopup");
-    if (modal) {
-        modal.style.display = "flex";
-    } else {
-        alert("बेहतर अनुभव के लिए ब्राउज़र सेटिंग में जाकर 'Add to Home Screen' चुनें।");
-    }
+        }
+    });
 }
 
-// 4. पॉपअप बंद करने का फंक्शन
-function closeInstallPopup() {
-    const modal = document.getElementById("installPopup");
-    if (modal) modal.style.display = "none";
-}
+// 3. Installed होने पर log/alert (optional)
+window.addEventListener('appinstalled', () => {
+    console.log("🎉 BookGadi PWA install हो गया!");
+    // alert("शाबाश! ऐप होम स्क्रीन पर आ गया!");
+});
 
-// 5. सर्विस वर्कर (अगर फाइल बनाई है तो)
+// Service Worker register (पहले से है, बस रखो)
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(err => console.log("SW error:", err));
+    navigator.serviceWorker.register('/sw.js')
+        .then(() => console.log("SW registered"))
+        .catch(err => console.log("SW error:", err));
 }
     
 </script>
