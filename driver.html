@@ -17,7 +17,8 @@
         .booking-card { background: #fff; border: 1px solid #eee; border-left: 4px solid #1a73e8; padding: 12px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .fare-tag { color: #1e8e3e; font-weight: bold; float: right; font-size: 16px; }
         .time-tag { color: #555; font-size: 13px; margin-bottom: 5px; display: block; }
-        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .city-badge { background: #1a73e8; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -26,23 +27,17 @@
         <h3>Driver Duty Panel</h3>
         
         <div id="loginSection">
-            <input type="text" id="driverInputID" placeholder="Enter Your Driver ID">
-            <select id="driverCity">
-                <option value="">Select City (Area)</option>
-                <option value="Azamgarh">Azamgarh Area</option>
-                <option value="Lucknow">Lucknow Area</option>
-                <option value="Mau">Mau Area</option>
-                <option value="Varanasi">Varanasi Area</option>
-            </select>
+            <input type="text" id="driverInputID" placeholder="Apna Driver ID Daalein">
+            <p id="locStatus" style="font-size: 12px; color: #666;">Detecting your city...</p>
             <button class="btn-go" onclick="initDuty()">Duty Start Karein</button>
         </div>
 
         <div id="statusSection" class="status-box">
             <p style="color:#2e7d32; margin: 0; font-weight: bold;">
-                <span class="pulse"></span> Online: <span id="activeCityDisp"></span>
+                <span class="pulse"></span> Online: <span id="activeCityDisp" class="city-badge">...</span>
             </p>
             <h4 id="welcomeName" style="margin: 5px 0;"></h4>
-            <div id="bookingList">Loading your area history...</div>
+            <div id="bookingList">History load ho rahi hai...</div>
             <button class="btn-off" onclick="stopDuty()">Duty Offline Karein</button>
         </div>
         <div id="log" style="color:red; font-size:12px; margin-top:10px;"></div>
@@ -56,8 +51,11 @@
         const db = firebase.database();
         let lastKnownId = null;
         let isFirstLoad = true;
+        let detectedCity = "Unknown";
 
+        // 1. Auto City Detection using Geolocation
         window.onload = function() {
+            detectCity();
             const savedID = localStorage.getItem('activeDriverId');
             const savedCity = localStorage.getItem('activeCity');
             if (savedID && savedCity) {
@@ -65,14 +63,28 @@
             }
         };
 
+        function detectCity() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(async (pos) => {
+                    try {
+                        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`);
+                        const data = await response.json();
+                        detectedCity = data.address.city || data.address.town || data.address.district || "Unknown";
+                        document.getElementById('locStatus').innerText = "Detected City: " + detectedCity;
+                    } catch (e) {
+                        document.getElementById('locStatus').innerText = "City detect nahi hui. Default use karenge.";
+                    }
+                });
+            }
+        }
+
         async function initDuty() {
             const id = document.getElementById('driverInputID').value.trim();
-            const city = document.getElementById('driverCity').value;
-            if(!id || !city) return alert("ID aur City dono jaruri hain!");
-
+            if(!id) return alert("ID bharein!");
+            
             if ("Notification" in window) await Notification.requestPermission();
             const audio = document.getElementById('beepSound');
-            audio.play().then(() => { audio.pause(); checkAndStart(id, city); }).catch(() => checkAndStart(id, city));
+            audio.play().then(() => { audio.pause(); checkAndStart(id, detectedCity); }).catch(() => checkAndStart(id, detectedCity));
         }
 
         function checkAndStart(inputID, city) {
@@ -82,7 +94,7 @@
                     localStorage.setItem('activeCity', city);
                     startTracking(inputID, snapshot.val().name, city);
                 } else {
-                    document.getElementById('log').innerText = "Error: ID correct nahi hai!";
+                    document.getElementById('log').innerText = "ID galat hai!";
                 }
             });
         }
@@ -93,29 +105,29 @@
             document.getElementById('welcomeName').innerText = name;
             document.getElementById('activeCityDisp').innerText = driverCity;
 
-            // History Loading + Real-time (Limit 100 for better search)
+            // 2. History & Real-time Fix
             db.ref('bookings').limitToLast(100).on('value', (snapshot) => {
                 const data = snapshot.val();
                 const list = document.getElementById('bookingList');
                 list.innerHTML = ""; 
 
                 if (!data) {
-                    list.innerHTML = "<p>No bookings yet.</p>";
+                    list.innerHTML = "<p>Abhi koi booking nahi hai.</p>";
                     return;
                 }
 
                 const keys = Object.keys(data).reverse();
                 let matchFound = false;
-                let currentNewestId = null;
+                let topId = null;
 
                 keys.forEach(key => {
                     const b = data[key];
-                    const pickup = (b.pickup || "").toLowerCase();
-                    const targetCity = driverCity.toLowerCase();
+                    const pickupStr = (b.pickup || "").toLowerCase();
+                    const cityStr = driverCity.toLowerCase();
 
-                    // Check if city matches pickup address
-                    if (pickup.includes(targetCity)) {
-                        if (!currentNewestId) currentNewestId = key;
+                    // Agar pickup address mein city ka naam hai, toh dikhao
+                    if (pickupStr.includes(cityStr) || cityStr === "unknown") {
+                        if (!topId) topId = key;
                         matchFound = true;
 
                         const item = document.createElement('div');
@@ -131,27 +143,24 @@
                     }
                 });
 
-                // Sound logic for new match
-                if (!isFirstLoad && currentNewestId && lastKnownId !== currentNewestId) {
+                if (!isFirstLoad && topId && lastKnownId !== topId) {
                     document.getElementById('beepSound').play();
                     if (Notification.permission === "granted") {
                         new Notification("Nayi Booking: " + driverCity);
                     }
                 }
 
-                if (currentNewestId) lastKnownId = currentNewestId;
-                if (!matchFound) list.innerHTML = `<p style='color:#888; font-size:13px;'>Aapke area (${driverCity}) ki koi booking nahi mili.</p>`;
-                
+                lastKnownId = topId;
+                if (!matchFound) list.innerHTML = `<p style='font-size:12px; color:#888;'>Aapke area (${driverCity}) ki purani history nahi mili.</p>`;
                 isFirstLoad = false;
             });
 
-            // GPS
             navigator.geolocation.watchPosition((pos) => {
                 db.ref('live_cars/' + id).update({
                     lat: pos.coords.latitude, lng: pos.coords.longitude,
                     status: "online", city: driverCity, last_updated: Date.now()
                 });
-            }, null, { enableHighAccuracy: true });
+            });
         }
 
         function stopDuty() {
