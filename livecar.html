@@ -237,12 +237,26 @@ function initMap(){
     fitRoute();
     trackCars();
     
-    // Initial State: Show message in driver list
     document.getElementById('bookingList').innerHTML = "<p style='text-align:center; font-size:12px; color:orange;'>बुकिंग देखने के लिए Online आएं</p>";
+    
+    // Request Notifications Permission
+    if ("Notification" in window) Notification.requestPermission();
 }
 
-// --- Beep Sound Logic ---
+// --- Smart Notification Helper ---
+function showSmartNotify(title, body) {
+    if (Notification.permission === "granted") {
+        new Notification(title, { 
+            body: body, 
+            icon: "https://static.wixstatic.com/media/843689_497878e241e348adbd167a8cc7462f1b~mv2.png",
+            tag: "bookgadi-status" // Keeps updating same notification
+        });
+    }
+}
+
+// --- Beep & Vibrate Logic ---
 function playBeep() {
+    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
     try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const oscillator = audioCtx.createOscillator();
@@ -309,7 +323,6 @@ function trackCars() {
     });
 }
 
-// --- Driver Platform Logic (Modified) ---
 function showDriverPanel() {
     document.getElementById("customerSection").style.display = "none";
     document.getElementById("driverPanel").style.display = "block";
@@ -318,15 +331,14 @@ function showDriverPanel() {
 function loadBookingsForDrivers() {
     if(!isOnline) return;
 
-    // Beep on new booking
     db.ref('bookings').limitToLast(1).on('child_added', (snapshot) => {
         const data = snapshot.val();
         if (data && data.timestamp && (Date.now() - data.timestamp < 10000)) {
             playBeep();
+            showSmartNotify("🚨 New Booking Recieved!", `From: ${data.pickup} (₹${data.fare})`);
         }
     });
 
-    // Load list
     db.ref('bookings').limitToLast(10).on('value', (snap) => {
         const listDiv = document.getElementById('bookingList');
         const bookings = snap.val();
@@ -365,7 +377,8 @@ function toggleDriverOnline() {
         document.getElementById("onlineBtn").innerText = "Stop Live (Go Offline)";
         document.getElementById("onlineBtn").style.background = "#ea4335";
         
-        loadBookingsForDrivers(); // Start loading bookings now
+        showSmartNotify("BookGadi Online", "You are now active. Background tracking enabled.");
+        loadBookingsForDrivers();
 
         if (navigator.geolocation) {
             watchID = navigator.geolocation.watchPosition((pos) => {
@@ -374,13 +387,13 @@ function toggleDriverOnline() {
                     status: "online", lastUpdate: Date.now()
                 });
             }, (err) => console.log(err), { enableHighAccuracy: true });
-            alert("आप ऑनलाइन हैं! बुकिंग आने पर आवाज़ आएगी।");
+            alert("आप ऑनलाइन हैं! पेज बैक करने पर भी बुकिंग अलर्ट आएगा।");
         }
     } else {
         isOnline = false;
         if(watchID) navigator.geolocation.clearWatch(watchID);
         db.ref('live_cars/' + dID).update({ status: "offline" });
-        db.ref('bookings').off(); // Stop listening
+        db.ref('bookings').off();
         document.getElementById("onlineBtn").innerText = "Go Online (Start Live)";
         document.getElementById("onlineBtn").style.background = "var(--success)";
         document.getElementById('bookingList').innerHTML = "<p style='text-align:center; font-size:12px; color:orange;'>बुकिंग देखने के लिए Online आएं</p>";
