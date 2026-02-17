@@ -13,10 +13,10 @@
       "type": "image/png"
     }
   ],
-  "start_url": "/",
+  "start_url": "/livecar",
   "background_color": "#ffffff",
   "display": "standalone",
-  "scope": "/",
+  "scope": "/livecar",
   "theme_color": "#1a73e8",
   "description": "Book your taxi online with BookGadi."
 }
