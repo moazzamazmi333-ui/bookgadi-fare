@@ -1,3 +1,9 @@
-self.addEventListener('fetch', function(event) {
-    // यह फाइल खाली भी हो तो चलती है, बस इसका होना जरूरी है
+// sw.js - Minimal for PWA install prompt
+self.addEventListener('fetch', event => {
+  event.respondWith(fetch(event.request));
 });
+
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', () => self.clients.claim());
+
+console.log('BookGadi Service Worker ready!');
