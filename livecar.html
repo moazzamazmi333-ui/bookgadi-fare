@@ -236,7 +236,25 @@ function initMap(){
     useMyLocation(); 
     fitRoute();
     trackCars();
-    loadBookingsForDrivers(); // Load bookings initially
+    
+    // Initial State: Show message in driver list
+    document.getElementById('bookingList').innerHTML = "<p style='text-align:center; font-size:12px; color:orange;'>बुकिंग देखने के लिए Online आएं</p>";
+}
+
+// --- Beep Sound Logic ---
+function playBeep() {
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+        gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.5);
+    } catch(e) { console.log("Audio play error", e); }
 }
 
 function fitRoute() {
@@ -279,10 +297,6 @@ function trackCars() {
                             labelOrigin: new google.maps.Point(16, -10)
                         }
                     });
-                    markers[id].addListener("click", () => {
-                        infoWindow.setContent(`<div style="padding:10px;"><strong>${driverName}</strong><br>Status: Active</div>`);
-                        infoWindow.open(map, markers[id]);
-                    });
                 } else { 
                     markers[id].setPosition(pos); 
                     if (markers[id].getMap() === null) markers[id].setMap(map);
@@ -295,13 +309,24 @@ function trackCars() {
     });
 }
 
-// --- Driver Platform Logic ---
+// --- Driver Platform Logic (Modified) ---
 function showDriverPanel() {
     document.getElementById("customerSection").style.display = "none";
     document.getElementById("driverPanel").style.display = "block";
 }
 
 function loadBookingsForDrivers() {
+    if(!isOnline) return;
+
+    // Beep on new booking
+    db.ref('bookings').limitToLast(1).on('child_added', (snapshot) => {
+        const data = snapshot.val();
+        if (data && data.timestamp && (Date.now() - data.timestamp < 10000)) {
+            playBeep();
+        }
+    });
+
+    // Load list
     db.ref('bookings').limitToLast(10).on('value', (snap) => {
         const listDiv = document.getElementById('bookingList');
         const bookings = snap.val();
@@ -311,18 +336,17 @@ function loadBookingsForDrivers() {
         }
 
         let html = "";
-        // Reverse order to show newest first
         Object.keys(bookings).reverse().forEach(id => {
             const b = bookings[id];
             html += `
-                <div class="job-card">
+                <div class="job-card" style="border-left:5px solid var(--primary)">
                     <div class="job-header">
                         <span>💰 ${b.fare}</span>
                         <span style="color:#666;">🕒 ${b.time}</span>
                     </div>
                     <b>Pickup:</b> ${b.pickup}<br>
                     <b>Drop:</b> ${b.drop}<br>
-                    <div style="margin-top:5px; font-size:11px; color:#1a73e8; font-weight:bold;">Status: Available</div>
+                    <div style="margin-top:5px; font-size:11px; color:#1a73e8; font-weight:bold;">New Job Available</div>
                 </div>
             `;
         });
@@ -337,29 +361,29 @@ function toggleDriverOnline() {
     if(!dName || !dID) return alert("नाम और ID भरें!");
 
     if(!isOnline) {
+        isOnline = true;
+        document.getElementById("onlineBtn").innerText = "Stop Live (Go Offline)";
+        document.getElementById("onlineBtn").style.background = "#ea4335";
+        
+        loadBookingsForDrivers(); // Start loading bookings now
+
         if (navigator.geolocation) {
-            isOnline = true;
-            document.getElementById("onlineBtn").innerText = "Stop Live (Go Offline)";
-            document.getElementById("onlineBtn").style.background = "#ea4335";
-            
             watchID = navigator.geolocation.watchPosition((pos) => {
                 db.ref('live_cars/' + dID).set({
-                    name: dName,
-                    lat: pos.coords.latitude,
-                    lng: pos.coords.longitude,
-                    status: "online",
-                    lastUpdate: Date.now()
+                    name: dName, lat: pos.coords.latitude, lng: pos.coords.longitude,
+                    status: "online", lastUpdate: Date.now()
                 });
             }, (err) => console.log(err), { enableHighAccuracy: true });
-            
-            alert("आप लाइव आ चुके हैं!");
+            alert("आप ऑनलाइन हैं! बुकिंग आने पर आवाज़ आएगी।");
         }
     } else {
         isOnline = false;
         if(watchID) navigator.geolocation.clearWatch(watchID);
         db.ref('live_cars/' + dID).update({ status: "offline" });
+        db.ref('bookings').off(); // Stop listening
         document.getElementById("onlineBtn").innerText = "Go Online (Start Live)";
         document.getElementById("onlineBtn").style.background = "var(--success)";
+        document.getElementById('bookingList').innerHTML = "<p style='text-align:center; font-size:12px; color:orange;'>बुकिंग देखने के लिए Online आएं</p>";
         alert("आप ऑफलाइन हो गए हैं।");
     }
 }
@@ -401,13 +425,6 @@ function calculateFare(){
                     <div class="info-note">⚠️ Toll, State Tax & Parking extra as per actual.</div>
                 </div>`;
             document.getElementById("waBtn").style.display = "block";
-
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choice) => {
-                    deferredPrompt = null;
-                });
-            }
         }
     });
 }
@@ -430,20 +447,10 @@ function sendWhatsApp(){
     const bookingData = { name: n, phone: ph, pickup: p, drop: d, fare: f, time: timeString, date: dateString, timestamp: Date.now() };
     db.ref('bookings').push(bookingData);
 
-    const navLink = "https://www.google.com/maps/dir/?api=1&origin=" + encodeURIComponent(p) + "&destination=" + encodeURIComponent(d) + "&travelmode=driving";
+    const navLink = "https://www.google.com/maps/dir/?api=1&origin=" + encodeURIComponent(p) + "&destination=" + encodeURIComponent(d);
     const msg = `*BookGadi Booking Request*\n\n📅 *Date:* ${dateString}\n⏰ *Time:* ${timeString}\n👤 *Name:* ${n}\n📞 *Phone:* ${ph}\n💰 *Fare:* ${f}\n📍 *Pickup:* ${p}\n🏁 *Drop:* ${d}\n\n🗺️ *Route:* \n${navLink}`;
     
     window.open(`https://wa.me/919651191446?text=${encodeURIComponent(msg)}`, "_blank");
-}
-
-let deferredPrompt = null;
-window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-});
-
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(err => console.log("SW error:", err));
 }
 </script>
 
