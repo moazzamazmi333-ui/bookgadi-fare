@@ -49,6 +49,11 @@
         .history-table th, .history-table td { border: 1px solid #ddd; padding: 5px; text-align: left; }
         .history-table th { background: #f2f2f2; }
 
+        /* Daily Report Summary Box */
+        .report-box { background: #e3f2fd; padding: 10px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #1a73e8; display: flex; justify-content: space-around; text-align: center; }
+        .report-box div b { display: block; font-size: 16px; color: #1a73e8; }
+        .report-box div span { font-size: 10px; color: #555; text-transform: uppercase; }
+
         /* Driver Cards */
         .driver-card { 
             padding: 10px; margin-bottom: 8px; border-radius: 8px; 
@@ -98,6 +103,11 @@
             </div>
 
             <div id="historySection">
+                <div class="report-box">
+                    <div><span>Today's Bookings</span><b id="todayCount">0</b></div>
+                    <div style="border-left:1px solid #ccc; padding-left:10px;"><span>Total Fare</span><b id="todayTotal">₹0</b></div>
+                </div>
+
                 <table class="history-table">
                     <thead>
                         <tr>
@@ -155,7 +165,6 @@
             startTracking();
         }
 
-        // History Toggle Function
         function toggleHistory() {
             const hist = document.getElementById('historySection');
             if(hist.style.display === "none" || hist.style.display === "") {
@@ -166,49 +175,53 @@
             }
         }
 
-        // Load History from Firebase
-       
-function loadHistory() {
-    db.ref('bookings').limitToLast(20).on('value', (snap) => {
-        const data = snap.val();
-        const tbody = document.getElementById('historyBody');
-        tbody.innerHTML = "";
-        
-        if(data) {
-            Object.keys(data).reverse().forEach(id => {
-                const b = data[id];
-                tbody.innerHTML += `
-                    <tr>
-                        <td style="padding:5px;">${b.time}<br>${b.date}</td>
-                        <td style="padding:5px;">
-                            <b>${b.name}</b><br>
-                            <small>${b.pickup} ➔ ${b.drop}</small>
-                        </td>
-                        <td style="padding:5px; text-align:center;">
-                            ${b.fare}<br>
-                            <button onclick="deleteBooking('${id}')" style="border:none; background:none; color:red; cursor:pointer; font-size:16px; margin-top:5px;">🗑️</button>
-                        </td>
-                    </tr>
-                `;
-            });
-        } else {
-            tbody.innerHTML = "<tr><td colspan='3' style='text-align:center;'>No Data</td></tr>";
-        }
-    });
-}
+        function loadHistory() {
+            const todayDate = new Date().toLocaleDateString(); 
 
-// 2. बुकिंग डिलीट करने का नया फंक्शन
-function deleteBooking(id) {
-    if(confirm("क्या आप इस बुकिंग को हिस्ट्री से हटाना चाहते हैं?")) {
-        db.ref('bookings/' + id).remove()
-        .then(() => {
-            alert("बुकिंग हटा दी गई!");
-        })
-        .catch((error) => {
-            alert("Error: " + error.message);
-        });
-    }
-}
+            db.ref('bookings').on('value', (snap) => {
+                const data = snap.val();
+                const tbody = document.getElementById('historyBody');
+                tbody.innerHTML = "";
+                
+                let count = 0;
+                let totalFare = 0;
+
+                if(data) {
+                    Object.keys(data).reverse().forEach(id => {
+                        const b = data[id];
+                        
+                        // Today's Report Calculation
+                        if(b.date === todayDate) {
+                            count++;
+                            let fareNum = parseInt(b.fare.replace(/[^0-9]/g, '')) || 0;
+                            totalFare += fareNum;
+                        }
+
+                        tbody.innerHTML += `
+                            <tr>
+                                <td style="padding:5px;">${b.time}<br>${b.date}</td>
+                                <td style="padding:5px;"><b>${b.name}</b><br><small>${b.pickup} ➔ ${b.drop}</small></td>
+                                <td style="padding:5px; text-align:center;">
+                                    ${b.fare}<br>
+                                    <button onclick="deleteBooking('${id}')" style="border:none; background:none; color:red; cursor:pointer; font-size:16px; margin-top:5px;">🗑️</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                } else {
+                    tbody.innerHTML = "<tr><td colspan='3' style='text-align:center;'>No Data</td></tr>";
+                }
+
+                document.getElementById('todayCount').innerText = count;
+                document.getElementById('todayTotal').innerText = "₹" + totalFare;
+            });
+        }
+
+        function deleteBooking(id) {
+            if(confirm("क्या आप इस बुकिंग को हिस्ट्री से हटाना चाहते हैं?")) {
+                db.ref('bookings/' + id).remove().then(() => alert("बुकिंग हटा दी गई!"));
+            }
+        }
 
         function createNewDriver() {
             const id = document.getElementById('newDriverID').value.trim();
