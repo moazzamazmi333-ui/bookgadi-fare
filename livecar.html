@@ -113,6 +113,12 @@ select { width: 100%; padding: 14px; border-radius: 12px; border: 1.5px solid #e
 .driver-entry { text-align: center; margin-top: 20px; font-size: 13px; }
 .driver-entry a { color: var(--primary); text-decoration: none; font-weight: bold; }
 #driverPanel { display: none; margin-top: 20px; padding: 15px; border: 2px solid var(--primary); border-radius: 15px; background: #f0f4ff; }
+
+/* Booking List Styles */
+.booking-list { margin-top: 20px; max-height: 300px; overflow-y: auto; }
+.job-card { background: #fff; padding: 12px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #ddd; font-size: 13px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+.job-card b { color: var(--primary); }
+.job-header { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 5px; font-weight: bold; }
 </style>
 </head>
 <body>
@@ -171,6 +177,13 @@ select { width: 100%; padding: 14px; border-radius: 12px; border: 1.5px solid #e
             <input id="driverName" class="input-box" placeholder="आपका नाम">
             <input id="driverID" class="input-box" placeholder="गाड़ी नंबर या ID">
             <button id="onlineBtn" class="main-btn btn-wa" onclick="toggleDriverOnline()">Go Online (Start Live)</button>
+            
+            <hr style="margin: 15px 0; border: 0; border-top: 1px solid #ccc;">
+            <h5 style="margin-bottom:10px;">New Bookings (Today)</h5>
+            <div id="bookingList" class="booking-list">
+                <p style="font-size:12px; color:#666; text-align:center;">लोड हो रहा है...</p>
+            </div>
+
             <button class="btn-loc" style="margin-top:10px;" onclick="location.reload()">Back to Booking</button>
         </div>
     </div>
@@ -223,6 +236,7 @@ function initMap(){
     useMyLocation(); 
     fitRoute();
     trackCars();
+    loadBookingsForDrivers(); // Load bookings initially
 }
 
 function fitRoute() {
@@ -287,6 +301,35 @@ function showDriverPanel() {
     document.getElementById("driverPanel").style.display = "block";
 }
 
+function loadBookingsForDrivers() {
+    db.ref('bookings').limitToLast(10).on('value', (snap) => {
+        const listDiv = document.getElementById('bookingList');
+        const bookings = snap.val();
+        if(!bookings) {
+            listDiv.innerHTML = "<p style='text-align:center; font-size:12px;'>कोई बुकिंग नहीं मिली</p>";
+            return;
+        }
+
+        let html = "";
+        // Reverse order to show newest first
+        Object.keys(bookings).reverse().forEach(id => {
+            const b = bookings[id];
+            html += `
+                <div class="job-card">
+                    <div class="job-header">
+                        <span>💰 ${b.fare}</span>
+                        <span style="color:#666;">🕒 ${b.time}</span>
+                    </div>
+                    <b>Pickup:</b> ${b.pickup}<br>
+                    <b>Drop:</b> ${b.drop}<br>
+                    <div style="margin-top:5px; font-size:11px; color:#1a73e8; font-weight:bold;">Status: Available</div>
+                </div>
+            `;
+        });
+        listDiv.innerHTML = html;
+    });
+}
+
 function toggleDriverOnline() {
     const dName = document.getElementById("driverName").value.trim();
     const dID = document.getElementById("driverID").value.trim().replace(/[^a-zA-Z0-9]/g, "");
@@ -294,7 +337,6 @@ function toggleDriverOnline() {
     if(!dName || !dID) return alert("नाम और ID भरें!");
 
     if(!isOnline) {
-        // Go Online
         if (navigator.geolocation) {
             isOnline = true;
             document.getElementById("onlineBtn").innerText = "Stop Live (Go Offline)";
@@ -310,10 +352,9 @@ function toggleDriverOnline() {
                 });
             }, (err) => console.log(err), { enableHighAccuracy: true });
             
-            alert("आप लाइव आ चुके हैं! बुकिंग के लिए फोन ऑन रखें।");
+            alert("आप लाइव आ चुके हैं!");
         }
     } else {
-        // Go Offline
         isOnline = false;
         if(watchID) navigator.geolocation.clearWatch(watchID);
         db.ref('live_cars/' + dID).update({ status: "offline" });
@@ -323,7 +364,7 @@ function toggleDriverOnline() {
     }
 }
 
-// --- Existing Functions (Unchanged) ---
+// --- Existing Functions ---
 function useMyLocation(){
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition((pos) => {
