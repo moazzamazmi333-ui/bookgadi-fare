@@ -12,48 +12,49 @@
         .container { max-width: 450px; margin: auto; }
         .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: center; }
         .header img { width: 110px; margin-bottom: 10px; }
-       
-        input, select { width: 100%; padding: 14px; margin: 10px 0; border: 1px solid #ccc; border-radius: 10px; font-size: 16px; box-sizing: border-box; }
+        
+        input, select { width: 100%; padding: 14px; margin: 10px 0; border: 1.5px solid #ddd; border-radius: 10px; font-size: 16px; box-sizing: border-box; }
         .btn-main { background: var(--primary); color: white; border: none; padding: 15px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; }
-       
+        
         .status-box { display: none; margin-top: 10px; }
         .online-tag { background: #e8f5e9; color: var(--success); padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; display: inline-block; margin-bottom: 10px; }
-       
+        
         #bookingList { margin-top: 20px; text-align: left; }
         .b-item { background: white; border-radius: 15px; padding: 15px; margin-bottom: 15px; border-left: 6px solid var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .b-fare { float: right; color: var(--success); font-weight: 800; font-size: 18px; }
-        .b-info { font-size: 14px; margin: 5px 0; color: #333; }
-        .call-btn { background: var(--primary); color: white; text-decoration: none; padding: 8px 15px; border-radius: 8px; font-size: 13px; float: right; margin-top: -5px; }
-       
+        .b-info { font-size: 14px; margin: 5px 0; color: #333; line-height: 1.4; }
+        .call-btn { background: var(--primary); color: white; text-decoration: none; padding: 8px 15px; border-radius: 8px; font-size: 13px; float: right; margin-top: -5px; font-weight: bold; }
+        
         .no-data { padding: 30px; color: #777; font-size: 14px; text-align: center; background: #fff; border-radius: 15px; }
     </style>
 </head>
 <body>
+
 <div class="container">
     <div class="card" id="loginUI">
         <img src="https://www.bookgadi.com/logo.png">
         <h3>Driver Login</h3>
-        <input type="text" id="driverID" placeholder="Enter ID (Example: BG01)">
-        <button class="btn-main" onclick="login()">Login</button>
+        <input type="text" id="driverID" placeholder="Enter Driver ID">
+        <button class="btn-main" onclick="login()">Start Duty</button>
     </div>
 
     <div id="appUI" class="status-box">
         <div class="card">
             <div class="online-tag">● ONLINE DUTY</div>
             <h4 id="dName" style="margin:5px 0;"></h4>
-           
-            <label style="font-size: 12px; color: #666; display: block; text-align: left;">Filter Your City:</label>
-            <select id="cityFilter" onchange="applyFilter()">
-                <option value="ALL">Show All (सब देखें)</option>
-                <option value="AZAM">Azamgarh (Smart)</option>
-                <option value="LUCK">Lucknow</option>
-                <option value="VAR">Varanasi</option>
+            
+            <label style="font-size: 12px; color: #666; display: block; text-align: left; margin-top:10px;">Filter Your Working Area:</label>
+            <select id="cityFilter" onchange="showHistory()">
+                <option value="ALL">Show All (Everything)</option>
+                <option value="AZAM">Azamgarh Smart Filter</option>
+                <option value="LKO">Lucknow Area</option>
+                <option value="VNS">Varanasi Area</option>
             </select>
         </div>
 
-        <div id="bookingList">Loading bookings...</div>
-       
-        <button onclick="logout()" style="background:none; border:none; color:red; margin-top:20px; font-size:14px; cursor:pointer;">Logout & Offline</button>
+        <div id="bookingList">Searching...</div>
+        
+        <button onclick="logout()" style="background:none; border:none; color:red; margin-top:20px; font-size:14px; cursor:pointer; width:100%;">Logout & Go Offline</button>
     </div>
 </div>
 
@@ -65,8 +66,8 @@
     const db = firebase.database();
 
     let myID = "";
-    let bookingListener = null;
-    let allBookings = {};
+    let isInit = true;
+    let lastTopId = null;
 
     window.onload = function() {
         if(localStorage.getItem('bg_id')) login(localStorage.getItem('bg_id'));
@@ -81,138 +82,89 @@
                 localStorage.setItem('bg_id', myID);
                 document.getElementById('loginUI').style.display = "none";
                 document.getElementById('appUI').style.display = "block";
-                document.getElementById('dName').innerText = snap.val().name || myID;
-
-                startListeningToBookings();
+                document.getElementById('dName').innerText = "Hi, " + snap.val().name;
+                showHistory();
                 startGPS();
-            } else {
-                alert("Wrong ID!");
-            }
+            } else { alert("ID not found in database!"); }
         });
     }
 
-    function startListeningToBookings() {
-        if (bookingListener) {
-            bookingListener.off();
-        }
+    function showHistory() {
+        const filter = document.getElementById('cityFilter').value;
+        
+        db.ref('bookings').limitToLast(100).on('value', snap => {
+            const list = document.getElementById('bookingList');
+            list.innerHTML = "";
+            const data = snap.val();
+            if(!data) { list.innerHTML = "<div class='no-data'>No history available.</div>"; return; }
 
-        bookingListener = db.ref('bookings')
-            .limitToLast(100)
-            .on('value', snap => {
-                allBookings = snap.val() || {};
-                applyFilter();
+            const keys = Object.keys(data).reverse();
+            let foundCount = 0;
+            let currentTopId = null;
+
+            keys.forEach(k => {
+                const b = data[k];
+                // Address ko uppercase mein karke check karenge taaki spelling match ho sake
+                const pickup = (b.pickup || "").toUpperCase();
+                let isMatch = false;
+
+                if(filter === "ALL") {
+                    isMatch = true;
+                } else if(filter === "AZAM") {
+                    // Yahan hum multiple spelling variants check kar rahe hain
+                    const variants = ["AZAM", "AZM", "AZGARH", "AMGARH", "AZA"];
+                    variants.forEach(v => {
+                        if(pickup.indexOf(v) !== -1) isMatch = true;
+                    });
+                } else if(filter === "LKO") {
+                    if(pickup.includes("LUCK") || pickup.includes("LKO")) isMatch = true;
+                } else if(filter === "VNS") {
+                    if(pickup.includes("VARA") || pickup.includes("VNS") || pickup.includes("BANARAS")) isMatch = true;
+                }
+
+                if(isMatch) {
+                    if(!currentTopId) currentTopId = k;
+                    foundCount++;
+                    const div = document.createElement('div');
+                    div.className = "b-item";
+                    div.innerHTML = `
+                        <span class="b-fare">₹${b.fare}</span>
+                        <div style="font-size:11px; color:var(--danger); font-weight:bold; margin-bottom:8px;">📅 ${b.date} | ⏰ ${b.time}</div>
+                        <div class="b-info"><b>Pickup:</b> ${b.pickup}</div>
+                        <div class="b-info"><b>Drop:</b> ${b.drop}</div>
+                        <div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px; overflow:hidden;">
+                            <span style="font-size:14px; font-weight:bold; color:var(--primary);">👤 ${b.name}</span>
+                            <a href="tel:${b.phone}" class="call-btn">📞 Call Now</a>
+                        </div>
+                    `;
+                    list.appendChild(div);
+                }
             });
-    }
 
-    function applyFilter() {
-    const filter = document.getElementById('cityFilter').value;
-    const list = document.getElementById('bookingList');
-    list.innerHTML = "";
-
-    if (Object.keys(allBookings).length === 0) {
-        list.innerHTML = "<div class='no-data'>No bookings found.</div>";
-        return;
-    }
-
-    const keys = Object.keys(allBookings).reverse();
-    let found = 0;
-
-    keys.forEach(k => {
-        const b = allBookings[k];
-        const pickup = (b.pickup || "").toUpperCase().trim();
-        let match = false;
-
-        if (filter === "ALL") {
-            match = true;
-        } 
-        else if (filter === "AZAM") {
-            // Super expanded matching for Azamgarh variations
-            if (
-                pickup.includes("AZAM") || 
-                pickup.includes("AZM") || 
-                pickup.includes("AZA") || 
-                pickup.includes("AMGARH") || 
-                pickup.includes("AZAMGARH") ||
-                pickup.includes("AAZAM") || 
-                pickup.includes("AJAM") || 
-                pickup.includes("AZMGARH") || 
-                pickup.includes("AZAMGAR") || 
-                pickup.includes("AZAMGADH") || 
-                pickup.includes("आजमगढ़") ||     // Hindi input
-                pickup.includes("अज़मगढ़") ||
-                pickup.includes("आज़मगढ़")
-            ) {
-                match = true;
+            // New booking alert
+            if(!isInit && currentTopId && currentTopId !== lastTopId) {
+                document.getElementById('alert').play().catch(()=>{});
             }
-        } 
-        else if (filter === "LUCK") {
-            if (pickup.includes("LUCK") || 
-                pickup.includes("LKO") || 
-                pickup.includes("LUCKNOW")) {
-                match = true;
-            }
-        } 
-        else if (filter === "VAR") {
-            if (pickup.includes("VAR") || 
-                pickup.includes("VARANASI") || 
-                pickup.includes("BSB") || 
-                pickup.includes("KASHI")) {
-                match = true;
-            }
-        }
+            lastTopId = currentTopId;
+            isInit = false;
 
-        if (match) {
-            found++;
-            const div = document.createElement('div');
-            div.className = "b-item";
-            div.innerHTML = `
-                <span class="b-fare">₹${b.fare || '—'}</span>
-                <div style="font-size:11px; color:var(--danger); font-weight:bold;">
-                    ${b.date || '?'} | ${b.time || '?'}
-                </div>
-                <div class="b-info"><b>From:</b> ${b.pickup || '—'}</div>
-                <div class="b-info"><b>To:</b> ${b.drop || '—'}</div>
-                <div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px;">
-                    <span style="font-size:13px; font-weight:bold;">${b.name || 'Customer'}</span>
-                    <a href="tel:${b.phone || ''}" class="call-btn">Call Now</a>
-                </div>
-            `;
-            list.appendChild(div);
-        }
-    });
-
-    if (found === 0) {
-        list.innerHTML = `<div class='no-data'>No bookings found in this city. (Check if pickup has "${filter === 'AZAM' ? 'Azamgarh/Azam/Azm' : filter}" in it)</div>`;
-    }
-}
-        if (found === 0) {
-            list.innerHTML = `<div class='no-data'>No bookings found in this city.</div>`;
-        }
+            if(foundCount === 0) {
+                list.innerHTML = `<div class='no-data'>No bookings found for this specific area. <br><br><b>Tip:</b> Check "Show All" to see global list.</div>`;
+            }
+        });
     }
 
     function startGPS() {
-        if (!navigator.geolocation) return;
-
         navigator.geolocation.watchPosition(pos => {
             db.ref('live_cars/' + myID).update({
-                lat: pos.coords.latitude,
-                lng: pos.coords.longitude,
-                status: "online",
-                last: Date.now()
+                lat: pos.coords.latitude, lng: pos.coords.longitude,
+                status: "online", last_ping: Date.now()
             });
-        }, err => {
-            console.log("GPS error:", err);
-        }, {
-            enableHighAccuracy: true,
-            timeout: 5000,
-            maximumAge: 0
-        });
+        }, null, { enableHighAccuracy: true });
     }
 
     function logout() {
-        if (myID) {
-            db.ref('live_cars/' + myID).update({ status: "offline" });
-        }
+        db.ref('live_cars/' + myID).update({ status: "offline" });
         localStorage.clear();
         location.reload();
     }
