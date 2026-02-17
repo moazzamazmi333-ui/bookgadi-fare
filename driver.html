@@ -115,11 +115,7 @@
         keys.forEach(k => {
             const b = allBookings[k];
             const pickupRaw = b.pickup || "";
-            const pickup = pickupRaw.toUpperCase().trim().replace(/\s+/g, ' ');
-
-            // Debug logs – ye lines important hain abhi
-            console.log("Pickup raw:", pickupRaw);
-            console.log("Pickup cleaned:", pickup);
+            const pickup = pickupRaw.toUpperCase().trim().replace(/\s+/g, ' ').replace(/[^A-Z0-9 ]/g, ''); // remove special chars (+ , etc.)
 
             let match = false;
 
@@ -131,22 +127,22 @@
                     "AZAM", "AZM", "AZA", "AMGARH", "AZAMGARH", "AZAM GARH", "AZAM-GARH",
                     "AAZAM", "AJAM", "AZMGARH", "AZAMGAR", "AZAMGADH", "AJAMGARH",
                     "आजमगढ़", "अजमगढ़", "आज़मगढ़", "अज़मगढ़", "आजम गढ़", "अजम गढ़", "आजमगढ",
-                    "PHOOLPUR", "MUHAMMADABAD", "MUBARAKPUR", "MEHNAGAR", "MARTINGANJ",
-                    "SADAR", "RS", "BUS", "STAND", "KOTWA", "SARAI MIR", "GOSHAINGANJ"
+                    "SUKKHIPUR", "SUKHIPUR", "SUKHI PUR", "SUKHI", "SUKKHI PUR", "SUKKHIPUR", // ← Yeh add kiya for Sukkhipur!
+                    "PHOOLPUR", "PHULPUR", "MUHAMMADABAD", "MUBARAKPUR", "MEHNAGAR", "MARTINGANJ",
+                    "AHIRAULA", "BURHANPUR", "ATRAULIA", "SADAR", "KOTWA", "SARAI MIR", "GOSHAINGANJ"
                 ];
 
                 for (let kw of azamKeywords) {
                     if (pickup.includes(kw)) {
                         match = true;
-                        console.log("Match found for keyword:", kw); // extra debug
                         break;
                     }
                 }
 
+                // Extra rule for Azamgarh villages (if "GARH" + related prefix)
                 if (!match && pickup.includes("GARH") && 
                     (pickup.includes("AZ") || pickup.includes("AJ") || pickup.includes("AA"))) {
                     match = true;
-                    console.log("Match via GARH + AZ/AJ combo");
                 }
             } 
             else if (filter === "LUCK") {
@@ -181,7 +177,7 @@
         });
 
         if (found === 0 && filter !== "ALL") {
-            list.innerHTML = `<div class='no-data'>Is city mein koi booking nahi mila.<br>Console check karo aur pickup names mujhe batao.</div>`;
+            list.innerHTML = `<div class='no-data'>Is city mein koi booking nahi mila (Sukkhipur Azamgarh mein hai, ab show hona chahiye).</div>`;
         }
     }
 
