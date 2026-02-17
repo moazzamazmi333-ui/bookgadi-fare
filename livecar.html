@@ -5,41 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="title" content="BookGadi - Live Taxi Tracking & Online Cab Booking">
 <meta name="description" content="BookGadi के साथ सुरक्षित और सस्ती टैक्सी बुक करें। लाइव कार ट्रैकिंग, पारदर्शी किराया (₹10/km) और 24/7 सर्विस। लखनऊ, आज़मगढ़ और उत्तर प्रदेश में उपलब्ध।">
-<meta name="keywords" content="BookGadi, Best Taxi Service In Azamgarh, Best Taxi Service Near Me, Taxi Booking Lucknow, Lucknow Airport Taxi, Cab Service Azamgarh, Live Taxi Tracking, Online Cab Booking, Cheapest Taxi UP, BookGadi App">
-<meta name="robots" content="index, follow">
 <meta name="theme-color" content="#1a73e8">
-<meta name="mobile-web-app-capable" content="yes">
-<link rel="canonical" href="https://app.bookgadi.com/">
-
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "TaxiService",
-  "name": "BookGadi",
-  "url": "https://app.bookgadi.com/",
-  "logo": "https://static.wixstatic.com/media/843689_497878e241e348adbd167a8cc7462f1b~mv2.png",
-  "provider": {
-    "@type": "LocalBusiness",
-    "name": "BookGadi",
-    "telephone": "+919651191446",
-    "priceRange": "₹10/km - ₹12/km",
-    "address": {
-      "@type": "PostalAddress",
-      "addressLocality": "Lucknow",
-      "addressRegion": "UP",
-      "addressCountry": "IN"
-    }
-  },
-  "description": "Safe and affordable taxi service with live car tracking in Lucknow, Azamgarh and Uttar Pradesh."
-}
-</script>
-
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://app.bookgadi.com/">
-<meta property="og:title" content="BookGadi - सस्ती और सुरक्षित टैक्सी बुकिंग">
-<meta property="og:description" content="लाइव ट्रैकिंग के साथ अपनी टैक्सी बुक करें। किराया सिर्फ ₹10/km से शुरू।">
-<meta property="og:image" content="https://static.wixstatic.com/media/843689_def285c88df3499ca36a040ea8974cb5~mv2.jpg">
-<link rel="manifest" href="/manifest.json">
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -48,65 +14,47 @@
 :root { --primary: #1a73e8; --success: #25D366; --dark: #202124; --warning: #f4b400; }
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
 
-body { 
-    background: #f8f9fa; 
-    min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 0;
-}
+body { background: #f8f9fa; min-height: 100vh; padding-bottom: 80px; /* Space for Bottom Menu */ }
 
-.card {
-    width: 100%; max-width: 500px; background: #fff; border-radius: 0 0 24px 24px;
-    overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); margin-top: 0;
-}
+.card { width: 100%; max-width: 500px; background: #fff; margin: 0 auto; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
 
-.map-wrapper { 
-    position: relative; 
-    width: 100%; 
-    height: 450px; 
-    border: none; 
-    margin: 0;
-    padding: 0;
-}
+.map-wrapper { position: relative; width: 100%; height: 400px; }
 #map { height: 100%; width: 100%; }
 
 .live-indicator {
     position: absolute; top: 12px; left: 12px; z-index: 10;
     background: white; padding: 6px 14px; border-radius: 20px;
-    display: flex; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    border: 1px solid #eee;
+    display: flex; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.15); border: 1px solid #eee;
 }
 .dot { height: 8px; width: 8px; background: #28a745; border-radius: 50%; margin-right: 8px; animation: pulse 1.5s infinite; }
 @keyframes pulse { 0% {transform: scale(0.9);} 70% {transform: scale(1.2);} 100% {transform: scale(0.9);} }
 
-.map-controls { position: absolute; top: 12px; right: 12px; z-index: 10; display: flex; flex-direction: column; gap: 8px; }
-.ctrl-btn {
-    background: white; border: 1px solid #eee; width: 38px; height: 38px;
-    border-radius: 8px; cursor: pointer; display: flex; align-items: center;
-    justify-content: center; font-size: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.content { 
-    padding: 25px 20px; 
-    background: #ffffff;
-    border-radius: 25px 25px 0 0;
-    margin-top: -25px; 
-    position: relative;
-    z-index: 5;
-}
+.content { padding: 25px 20px; background: #ffffff; border-radius: 25px 25px 0 0; margin-top: -25px; position: relative; z-index: 5; }
 
 .input-box { width: 100%; padding: 14px; font-size: 15px; border-radius: 12px; border: 1.5px solid #eee; margin-bottom: 12px; outline: none; background: #fafafa; }
-.btn-loc { background: #f1f3f4; color: var(--primary); border: none; padding: 10px; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; width: 100%; margin-bottom: 20px; }
-select { width: 100%; padding: 14px; border-radius: 12px; border: 1.5px solid #eee; margin-bottom: 15px; font-weight: 600; background: #fff; }
+.btn-loc { background: #f1f3f4; color: var(--primary); border: none; padding: 10px; border-radius: 10px; font-weight: 600; cursor: pointer; width: 100%; margin-bottom: 20px; }
 .trip-type { display: flex; gap: 10px; margin-bottom: 20px; }
-.trip-type label { flex: 1; padding: 12px; background: #f8f9fa; border-radius: 12px; text-align: center; font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid #eee; transition: 0.3s; }
+.trip-type label { flex: 1; padding: 12px; background: #f8f9fa; border-radius: 12px; text-align: center; font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid #eee; }
 .trip-type input { display: none; }
 .trip-type label:has(input:checked) { background: var(--primary); color: #fff; border-color: var(--primary); }
 
-.main-btn { width: 100%; padding: 16px; border-radius: 14px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+.main-btn { width: 100%; padding: 16px; border-radius: 14px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; }
 .btn-calc { background: var(--dark); color: #fff; }
 .btn-wa { background: var(--success); color: #fff; margin-top: 12px; }
 
 .fare-card { padding: 18px; background: #f0f7ff; border-radius: 15px; border-left: 6px solid var(--primary); margin-top: 20px; }
-.info-note { font-size: 11px; color: #666; margin-top: 10px; background: #fff9e6; padding: 10px; border-radius: 10px; border: 1px dashed var(--warning); }
+
+/* BOTTOM MENU STYLE */
+.bottom-nav {
+    position: fixed; bottom: 0; left: 0; width: 100%; background: white; 
+    height: 70px; display: flex; justify-content: space-around; align-items: center; 
+    box-shadow: 0 -2px 15px rgba(0,0,0,0.1); z-index: 1000; border-top: 1px solid #eee;
+}
+.nav-item { text-align: center; color: #5f6368; cursor: pointer; flex: 1; transition: 0.3s; }
+.nav-item.active { color: var(--primary); }
+.nav-icon { font-size: 20px; margin-bottom: 2px; }
+.nav-text { font-size: 11px; font-weight: 600; }
+
 #userForm { display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; }
 </style>
 </head>
@@ -116,26 +64,22 @@ select { width: 100%; padding: 14px; border-radius: 12px; border: 1.5px solid #e
     <div class="map-wrapper" id="fullContainer">
         <div class="live-indicator">
             <span class="dot"></span>
-            <span id="carStatus" style="font-size:13px; font-weight:bold; color:#333;">Live: 0</span>
-        </div>
-        <div class="map-controls">
-            <button class="ctrl-btn" onclick="toggleFS()">⛶</button>
-            <button class="ctrl-btn" onclick="fitRoute()">📍</button>
+            <span id="carStatus" style="font-size:13px; font-weight:bold;">Live: 0</span>
         </div>
         <div id="map"></div>
     </div>
 
     <div class="content">
         <input id="pickup" class="input-box" placeholder="Kahan se? (Pickup Location)">
-        <button class="btn-loc" id="locBtn" onclick="useMyLocation()">📍 Current Location Use Karein</button>
+        <button class="btn-loc" onclick="useMyLocation()">📍 Current Location Use Karein</button>
         <input id="drop" class="input-box" placeholder="Kahan tak? (Drop Location)">
         
-        <select id="vehicle">
+        <select id="vehicle" class="input-box" style="font-weight: bold;">
             <option value="12">🚙 SUV (₹12/km)</option>
-            <option value="10">🚕 Sedan (₹10/km)</option>
+            <option value="10" selected>🚕 Sedan (₹10/km)</option>
         </select>
 
-        <div id="tripOptions" class="trip-type">
+        <div class="trip-type">
             <label><input type="radio" name="trip" id="oneway" checked onchange="calculateFare()"> One Way</label>
             <label><input type="radio" name="trip" id="roundtrip" onchange="calculateFare()"> Round Trip</label>
         </div>
@@ -147,129 +91,84 @@ select { width: 100%; padding: 14px; border-radius: 12px; border: 1.5px solid #e
 
         <div id="userForm">
             <input id="custName" class="input-box" placeholder="Aapka Naam">
-            <input id="custPhone" class="input-box" type="tel" placeholder="Mobile Number (10 digit)">
+            <input id="custPhone" class="input-box" type="tel" placeholder="Mobile Number">
             <div style="display: flex; gap: 10px;">
                 <input id="rideDate" class="input-box" type="date" style="flex: 1;">
                 <input id="rideTime" class="input-box" type="time" style="flex: 1;">
             </div>
-            <button class="main-btn btn-wa" onclick="sendWhatsApp()">Confirm & WhatsApp Book Karein</button>
+            <button class="main-btn btn-wa" onclick="sendWhatsApp()">Confirm & Book Now</button>
         </div>
     </div>
 </div>
 
+<div class="bottom-nav">
+    <div class="nav-item active" onclick="location.reload()">
+        <div class="nav-icon">🏠</div>
+        <div class="nav-text">Home</div>
+    </div>
+    <div class="nav-item" onclick="window.location.href='https://www.bookgadi.com/contact'">
+        <div class="nav-icon">📅</div>
+        <div class="nav-text">My Bookings</div>
+    </div>
+    <div class="nav-item" onclick="window.location.href='tel:9651191446'">
+        <div class="nav-icon">📞</div>
+        <div class="nav-text">Call Us</div>
+    </div>
+    <div class="nav-item" onclick="window.location.href='https://www.bookgadi.com/about'">
+        <div class="nav-icon">👤</div>
+        <div class="nav-text">About</div>
+    </div>
+</div>
+
 <script>
+// ... (आपका पुराना JavaScript यहाँ रहेगा - Firebase, Map, Calculation functions)
 const firebaseConfig = { databaseURL: "https://bookgadi-97c98-default-rtdb.firebaseio.com", projectId: "bookgadi-97c98" };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 let map, geocoder, pickupAC, dropAC, directionsRenderer, directionsService, infoWindow;
 let markers = {};
-const LKO = { lat: 26.8467, lng: 80.9462 };
-const AZM = { lat: 26.0739, lng: 83.1859 };
 
 function initMap(){
     document.getElementById('rideDate').valueAsDate = new Date();
     geocoder = new google.maps.Geocoder();
     directionsService = new google.maps.DirectionsService();
     infoWindow = new google.maps.InfoWindow();
-    directionsRenderer = new google.maps.DirectionsRenderer({ 
-        polylineOptions: { strokeColor: "#1a73e8", strokeWeight: 6, strokeOpacity: 0.8 } 
-    });
+    directionsRenderer = new google.maps.DirectionsRenderer({ polylineOptions: { strokeColor: "#1a73e8", strokeWeight: 6 } });
     
-    const standardStyle = [
-        { "featureType": "water", "stylers": [{ "color": "#e9e9e9" }] },
-        { "featureType": "landscape", "stylers": [{ "color": "#f5f5f5" }] },
-        { "featureType": "road", "elementType": "geometry", "stylers": [{ "color": "#ffffff" }] },
-        { "featureType": "poi", "stylers": [{ "visibility": "off" }] }
-    ];
-
     map = new google.maps.Map(document.getElementById("map"),{
         center: {lat: 26.5, lng: 82.1},
         zoom: 9,
-        styles: standardStyle,
-        zoomControl: true,
-        streetViewControl: false,
-        mapTypeControl: false,
-        fullscreenControl: false
+        disableDefaultUI: true,
+        zoomControl: false
     });
     directionsRenderer.setMap(map);
 
-    pickupAC = new google.maps.places.Autocomplete(document.getElementById("pickup"),{componentRestrictions:{country:"in"}});
-    dropAC = new google.maps.places.Autocomplete(document.getElementById("drop"),{componentRestrictions:{country:"in"}});
+    pickupAC = new google.maps.places.Autocomplete(document.getElementById("pickup"));
+    dropAC = new google.maps.places.Autocomplete(document.getElementById("drop"));
     
-    useMyLocation(); 
-    fitRoute();
     trackCars();
-}
-
-function fitRoute() {
-    const bounds = new google.maps.LatLngBounds();
-    bounds.extend(LKO); bounds.extend(AZM);
-    map.fitBounds(bounds);
-}
-
-function toggleFS() {
-    const el = document.getElementById("fullContainer");
-    if (!document.fullscreenElement) el.requestFullscreen();
-    else document.exitFullscreen();
 }
 
 function trackCars() {
     db.ref('live_cars').on('value', (snap) => {
         const cars = snap.val();
-        if(!cars) { 
-            document.getElementById('carStatus').innerText = "Live: 0";
-            for(let id in markers) markers[id].setMap(null);
-            markers = {}; 
-            return; 
-        }
-
         let onlineCount = 0;
-
-        Object.keys(cars).forEach(id => {
-            const data = cars[id];
-            
-            if (data.status === "online" && data.lat && data.lng) {
-                onlineCount++;
-                const pos = { lat: parseFloat(data.lat), lng: parseFloat(data.lng) };
-                const driverName = data.name ? data.name : "Partner";
-
-                if(!markers[id]) {
-                    markers[id] = new google.maps.Marker({
-                        position: pos, 
-                        map: map,
-                        label: { text: driverName, color: "black", fontSize: "11px", fontWeight: "bold" },
-                        icon: { 
-                            url: "https://static.wixstatic.com/media/843689_497878e241e348adbd167a8cc7462f1b~mv2.png", 
-                            scaledSize: new google.maps.Size(32,32),
-                            labelOrigin: new google.maps.Point(16, -10)
-                        }
-                    });
-
-                    markers[id].addListener("click", () => {
-                        const currentData = snap.val()[id]; 
-                        infoWindow.setContent(`
-                            <div style="padding:10px; line-height:1.5;">
-                                <strong style="color:#1a73e8;">BookGadi Live Partner</strong><br>
-                                <b>Name:</b> ${currentData.name || "Available"}<br>
-                                <b>ID:</b> ${id}<br>
-                                <span style="color:green;">● Active Now</span>
-                            </div>
-                        `);
-                        infoWindow.open(map, markers[id]);
-                    });
-
-                } else { 
-                    markers[id].setPosition(pos); 
-                    if (markers[id].getMap() === null) markers[id].setMap(map);
+        if(cars) {
+            Object.keys(cars).forEach(id => {
+                const data = cars[id];
+                if (data.status === "online" && data.lat) {
+                    onlineCount++;
+                    const pos = { lat: parseFloat(data.lat), lng: parseFloat(data.lng) };
+                    if(!markers[id]) {
+                        markers[id] = new google.maps.Marker({
+                            position: pos, map: map,
+                            icon: { url: "https://static.wixstatic.com/media/843689_497878e241e348adbd167a8cc7462f1b~mv2.png", scaledSize: new google.maps.Size(32,32) }
+                        });
+                    } else { markers[id].setPosition(pos); }
                 }
-            } else {
-                if (markers[id]) {
-                    markers[id].setMap(null);
-                }
-            }
-        });
-
+            });
+        }
         document.getElementById('carStatus').innerText = "Live: " + onlineCount;
     });
 }
@@ -279,9 +178,9 @@ function useMyLocation(){
         navigator.geolocation.getCurrentPosition((pos) => {
             const latlng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
             geocoder.geocode({ location: latlng }, (results, status) => {
-                if (status === "OK" && results[0]) {
+                if (status === "OK") {
                     document.getElementById("pickup").value = results[0].formatted_address;
-                    map.setCenter(latlng); map.setZoom(12);
+                    map.setCenter(latlng); map.setZoom(14);
                 }
             });
         });
@@ -291,33 +190,23 @@ function useMyLocation(){
 function calculateFare(){
     const p = document.getElementById("pickup").value;
     const d = document.getElementById("drop").value;
-    if(!p || !d) return alert("Please enter locations");
+    if(!p || !d) return alert("Kahan se kahan tak jana hai?");
 
     directionsService.route({ origin: p, destination: d, travelMode: 'DRIVING' }, (res, status) => {
         if (status === 'OK') {
             directionsRenderer.setDirections(res);
-            const leg = res.routes[0].legs[0];
-            const km = leg.distance.value / 1000;
-            const time = leg.duration.text;
+            const km = res.routes[0].legs[0].distance.value / 1000;
             const rate = Number(document.getElementById("vehicle").value);
             const isRound = document.getElementById("roundtrip").checked;
             let fare = isRound ? Math.round(km * rate * 2 + 300) : Math.round(250 + km * rate);
             
             document.getElementById("result").innerHTML = `
                 <div class="fare-card">
-                    <b>Distance:</b> ${km.toFixed(1)} km | <b>Time:</b> ${time}<br>
-                    <b>Est. Fare:</b> <span id="finalFare" style="color:var(--primary); font-size:22px;">₹${fare}</span>
-                    <div class="info-note">⚠️ Toll, State Tax & Parking extra as per actual.</div>
+                    <b>Duri:</b> ${km.toFixed(1)} km<br>
+                    <b>Anumanit Kiraya:</b> <span id="finalFare" style="color:var(--primary); font-size:22px;">₹${fare}</span>
+                    <div style="font-size:10px; color:red; margin-top:5px;">*Toll aur State Tax alag se dena hoga.</div>
                 </div>`;
             document.getElementById("waBtn").style.display = "block";
-
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choice) => {
-                    if (choice.outcome === 'accepted') console.log("Installed");
-                    deferredPrompt = null;
-                });
-            }
         }
     });
 }
@@ -325,53 +214,17 @@ function calculateFare(){
 function openBooking(){ document.getElementById("userForm").style.display = "block"; document.getElementById("waBtn").style.display = "none"; }
 
 function sendWhatsApp(){
-    const n = document.getElementById("custName").value.trim();
-    const ph = document.getElementById("custPhone").value.trim();
-    const p = document.getElementById("pickup").value.trim();
-    const d = document.getElementById("drop").value.trim();
-    const f = document.getElementById("finalFare") ? document.getElementById("finalFare").innerText : "";
-    
-    // इनपुट फील्ड से तारीख और समय उठाना
-    const dateInput = document.getElementById("rideDate").value;
-    const timeInput = document.getElementById("rideTime").value;
-    
+    const n = document.getElementById("custName").value;
+    const ph = document.getElementById("custPhone").value;
+    const f = document.getElementById("finalFare").innerText;
     if(!n || ph.length < 10) return alert("Sahi details bharein");
-    if(!dateInput || !timeInput) return alert("Date aur Time select karein");
 
-    // तारीख को बेहतर फॉर्मेट में बदलना (DD/MM/YYYY)
-    const dateParts = dateInput.split('-');
-    const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+    const msg = `*BookGadi Booking Request*\n\nName: ${n}\nPhone: ${ph}\nFare: ${f}\nPickup: ${document.getElementById("pickup").value}\nDrop: ${document.getElementById("drop").value}`;
     
-    const bookingData = { 
-        name: n, 
-        phone: ph, 
-        pickup: p, 
-        drop: d, 
-        fare: f, 
-        time: timeInput, 
-        date: formattedDate, 
-        timestamp: Date.now() 
-    };
-    
-    // Firebase में डाटा भेजना
-    db.ref('bookings').push(bookingData);
+    // Firebase entry
+    db.ref('bookings').push({ name: n, phone: ph, fare: f, date: document.getElementById("rideDate").value, pickup: document.getElementById("pickup").value });
 
-    const navLink = "https://www.google.com/maps/dir/?api=1&origin=" + encodeURIComponent(p) + "&destination=" + encodeURIComponent(d);
-    
-    // व्हाट्सएप मैसेज फॉर्मेट
-    const msg = `*BookGadi Booking Request*\n\n📅 *Date:* ${formattedDate}\n⏰ *Time:* ${timeInput}\n👤 *Name:* ${n}\n📞 *Phone:* ${ph}\n💰 *Fare:* ${f}\n📍 *Pickup:* ${p}\n🏁 *Drop:* ${d}\n\n🗺️ *Route:* \n${navLink}`;
-    
     window.open(`https://wa.me/919651191446?text=${encodeURIComponent(msg)}`, "_blank");
-}
-
-let deferredPrompt = null;
-window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-});
-
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(err => console.log("SW error:", err));
 }
 </script>
 
