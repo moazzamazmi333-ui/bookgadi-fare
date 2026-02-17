@@ -3,7 +3,42 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BookGadi - Live Tracking & Fare Calculator</title>
+<meta name="title" content="BookGadi - Live Taxi Tracking & Online Cab Booking">
+<meta name="description" content="BookGadi के साथ सुरक्षित और सस्ती टैक्सी बुक करें। लाइव कार ट्रैकिंग, पारदर्शी किराया (₹10/km) और 24/7 सर्विस। लखनऊ, आज़मगढ़ और उत्तर प्रदेश में उपलब्ध।">
+<meta name="keywords" content="BookGadi, Best Taxi Service In Azamgarh, Best Taxi Service Near Me, Taxi Booking Lucknow, Lucknow Airport Taxi, Cab Service Azamgarh, Live Taxi Tracking, Online Cab Booking, Cheapest Taxi UP, BookGadi App">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#1a73e8">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="canonical" href="https://app.bookgadi.com/">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TaxiService",
+  "name": "BookGadi",
+  "url": "https://app.bookgadi.com/",
+  "logo": "https://static.wixstatic.com/media/843689_497878e241e348adbd167a8cc7462f1b~mv2.png",
+  "provider": {
+    "@type": "LocalBusiness",
+    "name": "BookGadi",
+    "telephone": "+919651191446",
+    "priceRange": "₹10/km - ₹12/km",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Lucknow",
+      "addressRegion": "UP",
+      "addressCountry": "IN"
+    }
+  },
+  "description": "Safe and affordable taxi service with live car tracking in Lucknow, Azamgarh and Uttar Pradesh."
+}
+</script>
+
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://app.bookgadi.com/">
+<meta property="og:title" content="BookGadi - सस्ती और सुरक्षित टैक्सी बुकिंग">
+<meta property="og:description" content="लाइव ट्रैकिंग के साथ अपनी टैक्सी बुक करें। किराया सिर्फ ₹10/km से शुरू।">
+<meta property="og:image" content="https://static.wixstatic.com/media/843689_def285c88df3499ca36a040ea8974cb5~mv2.jpg">
 <link rel="manifest" href="/manifest.json">
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -127,7 +162,6 @@ const firebaseConfig = { databaseURL: "https://bookgadi-97c98-default-rtdb.fireb
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// infoWindow यहाँ डिफाइन किया गया है
 let map, geocoder, pickupAC, dropAC, directionsRenderer, directionsService, infoWindow;
 let markers = {};
 const LKO = { lat: 26.8467, lng: 80.9462 };
@@ -137,7 +171,7 @@ function initMap(){
     document.getElementById('rideDate').valueAsDate = new Date();
     geocoder = new google.maps.Geocoder();
     directionsService = new google.maps.DirectionsService();
-    infoWindow = new google.maps.InfoWindow(); // Init InfoWindow
+    infoWindow = new google.maps.InfoWindow();
     directionsRenderer = new google.maps.DirectionsRenderer({ 
         polylineOptions: { strokeColor: "#1a73e8", strokeWeight: 6, strokeOpacity: 0.8 } 
     });
@@ -201,7 +235,6 @@ function trackCars() {
                 const driverName = data.name ? data.name : "Partner";
 
                 if(!markers[id]) {
-                    // 1. अगर मार्कर नहीं है तो नया बनाएँ
                     markers[id] = new google.maps.Marker({
                         position: pos, 
                         map: map,
@@ -213,9 +246,7 @@ function trackCars() {
                         }
                     });
 
-                    // --- POPUP (InfoWindow) यहाँ वापस जोड़ा गया है ---
                     markers[id].addListener("click", () => {
-                        // ताज़ा डेटा दिखाने के लिए क्लिक पर डेटाबेस से नाम उठाएं
                         const currentData = snap.val()[id]; 
                         infoWindow.setContent(`
                             <div style="padding:10px; line-height:1.5;">
@@ -229,12 +260,10 @@ function trackCars() {
                     });
 
                 } else { 
-                    // 2. अगर मार्कर पहले से है, तो सिर्फ उसकी जगह बदलें (ताकि कार मूव हो)
                     markers[id].setPosition(pos); 
                     if (markers[id].getMap() === null) markers[id].setMap(map);
                 }
             } else {
-                // 3. ऑफलाइन होने पर हटा दें
                 if (markers[id]) {
                     markers[id].setMap(null);
                 }
@@ -269,7 +298,7 @@ function calculateFare(){
             directionsRenderer.setDirections(res);
             const leg = res.routes[0].legs[0];
             const km = leg.distance.value / 1000;
-            const time = leg.duration.text; // ETA यहाँ से आ रहा है
+            const time = leg.duration.text;
             const rate = Number(document.getElementById("vehicle").value);
             const isRound = document.getElementById("roundtrip").checked;
             let fare = isRound ? Math.round(km * rate * 2 + 300) : Math.round(250 + km * rate);
@@ -281,6 +310,14 @@ function calculateFare(){
                     <div class="info-note">⚠️ Toll, State Tax & Parking extra as per actual.</div>
                 </div>`;
             document.getElementById("waBtn").style.display = "block";
+
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choice) => {
+                    if (choice.outcome === 'accepted') console.log("Installed");
+                    deferredPrompt = null;
+                });
+            }
         }
     });
 }
@@ -300,99 +337,24 @@ function sendWhatsApp(){
     const timeString = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
     const dateString = now.toLocaleDateString();
     
-    // डेटाबेस में सेव करने के लिए ऑब्जेक्ट
-    const bookingData = {
-        name: n,
-        phone: ph,
-        pickup: p,
-        drop: d,
-        fare: f,
-        time: timeString,
-        date: dateString,
-        timestamp: Date.now()
-    };
-
-    // 1. Firebase में बुकिंग सेव करें
+    const bookingData = { name: n, phone: ph, pickup: p, drop: d, fare: f, time: timeString, date: dateString, timestamp: Date.now() };
     db.ref('bookings').push(bookingData);
 
-    // 2. व्हाट्सएप मैसेज तैयार करें
     const navLink = "https://www.google.com/maps/dir/?api=1&origin=" + encodeURIComponent(p) + "&destination=" + encodeURIComponent(d) + "&travelmode=driving";
-    
-    const msg = `*BookGadi Booking Request*\n\n📅 *Date:* ${dateString}\n⏰ *Time:* ${timeString}\n👤 *Name:* ${n}\n📞 *Phone:* ${ph}\n💰 *Fare:* ${f}\n📍 *Pickup:* ${p}\n🏁 *Drop:* ${d}\n\n🗺️ *Route:* \n${navLink}\n\n📞 *Call:* tel:${ph}`;
+    const msg = `*BookGadi Booking Request*\n\n📅 *Date:* ${dateString}\n⏰ *Time:* ${timeString}\n👤 *Name:* ${n}\n📞 *Phone:* ${ph}\n💰 *Fare:* ${f}\n📍 *Pickup:* ${p}\n🏁 *Drop:* ${d}\n\n🗺️ *Route:* \n${navLink}`;
     
     window.open(`https://wa.me/919651191446?text=${encodeURIComponent(msg)}`, "_blank");
 }
-// ------------------ PWA Install Logic (सीधा "Kiraaya Dekhein" बटन से) ------------------
+
 let deferredPrompt = null;
-
-// 1. Browser से prompt capture करो (ये पहले से तुम्हारे कोड में है, लेकिन confirm)
 window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();  // Auto popup रोक दो
+    e.preventDefault();
     deferredPrompt = e;
-    console.log("✅ Install prompt ready! अब 'Kiraaya Dekhein' बटन पर दिखेगा");
 });
 
-// 2. calculateFare() function में prompt ट्रिगर करो (तुम्हारा calculateFare function ढूंढो और इसमें ये जोड़ो)
-function calculateFare() {
-    // तुम्हारा पुराना कोड यहाँ वैसा ही रहेगा...
-    const p = document.getElementById("pickup").value;
-    const d = document.getElementById("drop").value;
-    if(!p || !d) return alert("Please enter locations");
-
-    directionsService.route({ origin: p, destination: d, travelMode: 'DRIVING' }, (res, status) => {
-        if (status === 'OK') {
-            directionsRenderer.setDirections(res);
-            const leg = res.routes[0].legs[0];
-            const km = leg.distance.value / 1000;
-            const time = leg.duration.text;
-            const rate = Number(document.getElementById("vehicle").value);
-            const isRound = document.getElementById("roundtrip").checked;
-            let fare = isRound ? Math.round(km * rate * 2 + 300) : Math.round(250 + km * rate);
-            
-            document.getElementById("result").innerHTML = `
-                <div class="fare-card">
-                    <b>Distance:</b> ${km.toFixed(1)} km | <b>Time:</b> ${time}<br>
-                    <b>Est. Fare:</b> <span id="finalFare" style="color:var(--primary); font-size:22px;">₹${fare}</span>
-                    <div class="info-note">⚠️ Toll, State Tax & Parking extra as per actual.</div>
-                </div>`;
-            document.getElementById("waBtn").style.display = "block";
-
-            // ★★★ नया कोड: Kiraaya Dekhein क्लिक पर Install Popup दिखाओ ★★★
-            if (deferredPrompt) {
-                console.log("Showing PWA install prompt on Kiraaya Dekhein click!");
-                deferredPrompt.prompt();  // Native popup खोलो
-
-                deferredPrompt.userChoice.then((choice) => {
-                    if (choice.outcome === 'accepted') {
-                        console.log("User ने ऐप install कर लिया!");
-                        // Optional: alert("धन्यवाद! ऐप होम स्क्रीन पर जुड़ गया ✓");
-                    } else {
-                        console.log("User ने cancel किया");
-                    }
-                    deferredPrompt = null;  // एक बार इस्तेमाल हो गया, अब null
-                }).catch(err => {
-                    console.error("Prompt error:", err);
-                });
-            } else {
-                console.log("Install prompt available नहीं है (शायद criteria पूरी नहीं)");
-            }
-        }
-    });
-}
-
-// 3. Installed होने पर log/alert (optional)
-window.addEventListener('appinstalled', () => {
-    console.log("🎉 BookGadi PWA install हो गया!");
-    // alert("शाबाश! ऐप होम स्क्रीन पर आ गया!");
-});
-
-// Service Worker register (पहले से है, बस रखो)
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js')
-        .then(() => console.log("SW registered"))
-        .catch(err => console.log("SW error:", err));
+    navigator.serviceWorker.register('/sw.js').catch(err => console.log("SW error:", err));
 }
-    
 </script>
 
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8fFUPeGfUy8Wwh-mQ_d3fbGZzKBy7VwM&libraries=places&callback=initMap" async defer></script>
