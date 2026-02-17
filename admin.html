@@ -167,27 +167,48 @@
         }
 
         // Load History from Firebase
-        function loadHistory() {
-            db.ref('bookings').limitToLast(20).on('value', (snap) => {
-                const data = snap.val();
-                const tbody = document.getElementById('historyBody');
-                tbody.innerHTML = "";
-                if(data) {
-                    Object.keys(data).reverse().forEach(id => {
-                        const b = data[id];
-                        tbody.innerHTML += `
-                            <tr>
-                                <td>${b.time}<br>${b.date}</td>
-                                <td><b>${b.name}</b><br>${b.pickup} ➔ ${b.drop}</td>
-                                <td>${b.fare}</td>
-                            </tr>
-                        `;
-                    });
-                } else {
-                    tbody.innerHTML = "<tr><td colspan='3' style='text-align:center;'>No Data</td></tr>";
-                }
+       
+function loadHistory() {
+    db.ref('bookings').limitToLast(20).on('value', (snap) => {
+        const data = snap.val();
+        const tbody = document.getElementById('historyBody');
+        tbody.innerHTML = "";
+        
+        if(data) {
+            Object.keys(data).reverse().forEach(id => {
+                const b = data[id];
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="padding:5px;">${b.time}<br>${b.date}</td>
+                        <td style="padding:5px;">
+                            <b>${b.name}</b><br>
+                            <small>${b.pickup} ➔ ${b.drop}</small>
+                        </td>
+                        <td style="padding:5px; text-align:center;">
+                            ${b.fare}<br>
+                            <button onclick="deleteBooking('${id}')" style="border:none; background:none; color:red; cursor:pointer; font-size:16px; margin-top:5px;">🗑️</button>
+                        </td>
+                    </tr>
+                `;
             });
+        } else {
+            tbody.innerHTML = "<tr><td colspan='3' style='text-align:center;'>No Data</td></tr>";
         }
+    });
+}
+
+// 2. बुकिंग डिलीट करने का नया फंक्शन
+function deleteBooking(id) {
+    if(confirm("क्या आप इस बुकिंग को हिस्ट्री से हटाना चाहते हैं?")) {
+        db.ref('bookings/' + id).remove()
+        .then(() => {
+            alert("बुकिंग हटा दी गई!");
+        })
+        .catch((error) => {
+            alert("Error: " + error.message);
+        });
+    }
+}
 
         function createNewDriver() {
             const id = document.getElementById('newDriverID').value.trim();
