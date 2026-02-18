@@ -51,7 +51,7 @@
 body { 
     background: #f8f9fa; 
     min-height: 100vh; display: flex; align-items: center; justify-content: center; 
-    padding: 0; padding-bottom: 70px; 
+    padding: 0; padding-bottom: 70px; /* Space for Menu */
 }
 
 .card {
@@ -110,6 +110,7 @@ select { width: 100%; padding: 14px; border-radius: 12px; border: 1.5px solid #e
 .info-note { font-size: 11px; color: #666; margin-top: 10px; background: #fff9e6; padding: 10px; border-radius: 10px; border: 1px dashed var(--warning); }
 #userForm { display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; }
 
+/* BOTTOM MENU CSS */
 .bottom-nav {
     position: fixed; bottom: 0; left: 0; width: 100%; background: white; 
     height: 65px; display: flex; justify-content: space-around; align-items: center; 
@@ -169,10 +170,18 @@ select { width: 100%; padding: 14px; border-radius: 12px; border: 1.5px solid #e
 </div>
 
 <div class="bottom-nav">
-    <div class="nav-item" onclick="location.reload()"><div>🏠</div><span>Home</span></div>
-    <div class="nav-item" onclick="window.location.href='bookings.html'"><div>📅</div><span>Bookings</span></div>
-    <div class="nav-item" onclick="window.location.href='tel:9651191446'"><div>📞</div><span>Call</span></div>
-    <div class="nav-item" onclick="window.location.href='driver.html'"><div>👨‍✈️</div><span style="color:#1a73e8">Driver</span></div>
+    <div class="nav-item" onclick="location.reload()">
+        <div>🏠</div><span>Home</span>
+    </div>
+    <div class="nav-item" onclick="window.location.href='bookings.html'">
+        <div>📅</div><span>Bookings</span>
+    </div>
+    <div class="nav-item" onclick="window.location.href='tel:9651191446'">
+        <div>📞</div><span>Call</span>
+    </div>
+    <div class="nav-item" onclick="window.location.href='driver.html'">
+        <div>👨‍✈️</div><span style="color:#1a73e8">Driver</span>
+    </div>
 </div>
 
 <script>
@@ -203,9 +212,21 @@ function initMap(){
         polylineOptions: { strokeColor: "#1a73e8", strokeWeight: 6, strokeOpacity: 0.8 } 
     });
     
+    const standardStyle = [
+        { "featureType": "water", "stylers": [{ "color": "#e9e9e9" }] },
+        { "featureType": "landscape", "stylers": [{ "color": "#f5f5f5" }] },
+        { "featureType": "road", "elementType": "geometry", "stylers": [{ "color": "#ffffff" }] },
+        { "featureType": "poi", "stylers": [{ "visibility": "off" }] }
+    ];
+
     map = new google.maps.Map(document.getElementById("map"),{
-        center: {lat: 26.5, lng: 82.1}, zoom: 9,
-        streetViewControl: false, mapTypeControl: false, fullscreenControl: false
+        center: {lat: 26.5, lng: 82.1},
+        zoom: 9,
+        styles: standardStyle,
+        zoomControl: true,
+        streetViewControl: false,
+        mapTypeControl: false,
+        fullscreenControl: false
     });
     directionsRenderer.setMap(map);
 
@@ -238,20 +259,53 @@ function trackCars() {
             markers = {}; 
             return; 
         }
+
         let onlineCount = 0;
+
         Object.keys(cars).forEach(id => {
             const data = cars[id];
+            
             if (data.status === "online" && data.lat && data.lng) {
                 onlineCount++;
                 const pos = { lat: parseFloat(data.lat), lng: parseFloat(data.lng) };
+                const driverName = data.name ? data.name : "Partner";
+
                 if(!markers[id]) {
                     markers[id] = new google.maps.Marker({
-                        position: pos, map: map,
-                        icon: { url: "https://static.wixstatic.com/media/843689_497878e241e348adbd167a8cc7462f1b~mv2.png", scaledSize: new google.maps.Size(32,32) }
+                        position: pos, 
+                        map: map,
+                        // यहाँ से label हटा दिया गया है
+                        icon: { 
+                            url: "https://static.wixstatic.com/media/843689_497878e241e348adbd167a8cc7462f1b~mv2.png", 
+                            scaledSize: new google.maps.Size(32,32)
+                            // labelOrigin भी हटा दिया गया है
+                        }
                     });
-                } else { markers[id].setPosition(pos); }
+
+                    markers[id].addListener("click", () => {
+                        const currentData = snap.val()[id]; 
+                        infoWindow.setContent(`
+                            <div style="padding:10px; line-height:1.5;">
+                                <strong style="color:#1a73e8;">BookGadi Live Partner</strong><br>
+                                <b>Name:</b> ${currentData.name || "Available"}<br>
+                                <b>ID:</b> ${id}<br>
+                                <span style="color:green;">● Active Now</span>
+                            </div>
+                        `);
+                        infoWindow.open(map, markers[id]);
+                    });
+
+                } else { 
+                    markers[id].setPosition(pos); 
+                    if (markers[id].getMap() === null) markers[id].setMap(map);
+                }
+            } else {
+                if (markers[id]) {
+                    markers[id].setMap(null);
+                }
             }
         });
+
         document.getElementById('carStatus').innerText = "Live: " + onlineCount;
     });
 }
@@ -277,6 +331,7 @@ function calculateFare(){
 
     directionsService.route({ origin: p, destination: d, travelMode: 'DRIVING' }, (res, status) => {
         if (status === 'OK') {
+          
             const leg = res.routes[0].legs[0];
             const pLat = leg.start_location.lat();
             const pLng = leg.start_location.lng();
@@ -290,16 +345,17 @@ function calculateFare(){
                 return;
             }
             // ---------------------------
-
+          
             directionsRenderer.setDirections(res);
             const km = leg.distance.value / 1000;
+            const time = leg.duration.text;
             const rate = Number(document.getElementById("vehicle").value);
             const isRound = document.getElementById("roundtrip").checked;
             let fare = isRound ? Math.round(km * rate * 2 + 300) : Math.round(250 + km * rate);
             
             document.getElementById("result").innerHTML = `
                 <div class="fare-card">
-                    <b>Distance:</b> ${km.toFixed(1)} km | <b>Time:</b> ${leg.duration.text}<br>
+                    <b>Distance:</b> ${km.toFixed(1)} km | <b>Time:</b> ${time}<br>
                     <b>Est. Fare:</b> <span id="finalFare" style="color:var(--primary); font-size:22px;">₹${fare}</span>
                     <div class="info-note">⚠️ Toll, State Tax & Parking extra as per actual.</div>
                 </div>`;
@@ -307,7 +363,10 @@ function calculateFare(){
 
             if (deferredPrompt) {
                 deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choice) => { deferredPrompt = null; });
+                deferredPrompt.userChoice.then((choice) => {
+                    if (choice.outcome === 'accepted') console.log("Installed");
+                    deferredPrompt = null;
+                });
             }
         }
     });
@@ -321,19 +380,47 @@ function sendWhatsApp(){
     const p = document.getElementById("pickup").value.trim();
     const d = document.getElementById("drop").value.trim();
     const f = document.getElementById("finalFare") ? document.getElementById("finalFare").innerText : "";
+    
     const dateInput = document.getElementById("rideDate").value;
     const timeInput = document.getElementById("rideTime").value;
     
     if(!n || ph.length < 10) return alert("Sahi details bharein");
-    const bookingData = { name: n, phone: ph, pickup: p, drop: d, fare: f, time: timeInput, date: dateInput, timestamp: Date.now() };
+    if(!dateInput || !timeInput) return alert("Date aur Time select karein");
+
+    const dateParts = dateInput.split('-');
+    const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+    
+    const bookingData = { 
+        name: n, 
+        phone: ph, 
+        pickup: p, 
+        drop: d, 
+        fare: f, 
+        time: timeInput, 
+        date: formattedDate, 
+        timestamp: Date.now() 
+    };
+    
     db.ref('bookings').push(bookingData);
-    const msg = `*BookGadi Booking Request*\n\n📅 *Date:* ${dateInput}\n⏰ *Time:* ${timeInput}\n👤 *Name:* ${n}\n💰 *Fare:* ${f}\n📍 *Pickup:* ${p}\n🏁 *Drop:* ${d}`;
+
+    const navLink = "https://www.google.com/maps/dir/?api=1&origin=" + encodeURIComponent(p) + "&destination=" + encodeURIComponent(d);
+    
+    const msg = `*BookGadi Booking Request*\n\n📅 *Date:* ${formattedDate}\n⏰ *Time:* ${timeInput}\n👤 *Name:* ${n}\n📞 *Phone:* ${ph}\n💰 *Fare:* ${f}\n📍 *Pickup:* ${p}\n🏁 *Drop:* ${d}\n\n🗺️ *Route:* \n${navLink}`;
+    
     window.open(`https://wa.me/919651191446?text=${encodeURIComponent(msg)}`, "_blank");
 }
 
 let deferredPrompt = null;
-window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; });
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+});
+
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(err => console.log("SW error:", err));
+}
 </script>
+
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8fFUPeGfUy8Wwh-mQ_d3fbGZzKBy7VwM&libraries=places&callback=initMap" async defer></script>
 </body>
 </html>
