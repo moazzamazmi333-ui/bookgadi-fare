@@ -264,11 +264,11 @@ function trackCars() {
                     markers[id] = new google.maps.Marker({
                         position: pos, 
                         map: map,
-                        label: { text: driverName, color: "black", fontSize: "11px", fontWeight: "bold" },
+                        // यहाँ से label हटा दिया गया है
                         icon: { 
                             url: "https://static.wixstatic.com/media/843689_497878e241e348adbd167a8cc7462f1b~mv2.png", 
-                            scaledSize: new google.maps.Size(32,32),
-                            labelOrigin: new google.maps.Point(16, -10)
+                            scaledSize: new google.maps.Size(32,32)
+                            // labelOrigin भी हटा दिया गया है
                         }
                     });
 
