@@ -7,27 +7,28 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        :root { --primary: #1a73e8; --red: #d93025; }
+        :root { --primary: #1a73e8; --red: #d93025; --gray: #80868b; }
         body { font-family: 'Segoe UI', sans-serif; background: #f8f9fa; margin: 0; padding: 20px; padding-bottom: 80px; }
         .header { text-align: center; margin-bottom: 25px; }
         .search-box { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
         input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; outline: none; box-sizing: border-box; }
         .btn-search { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 10px; margin-top: 10px; font-weight: bold; cursor: pointer; }
         
-        /* कार्ड में Flexbox जोड़ा गया ताकि बटन नीचे जा सके */
         .booking-card { 
             background: white; padding: 15px; border-radius: 15px; margin-bottom: 15px; 
             box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-left: 5px solid var(--primary); 
-            display: flex; flex-direction: column; position: relative; 
+            display: flex; flex-direction: column; position: relative; transition: 0.3s;
         }
+        /* कैंसिल होने पर कार्ड का स्टाइल */
+        .cancelled-card { border-left-color: var(--red) !important; opacity: 0.8; }
+        
         .b-date { font-size: 12px; color: #666; }
         .b-route { font-size: 14px; font-weight: bold; margin: 8px 0; color: #333; line-height: 1.4; }
         .b-fare { color: var(--primary); font-weight: bold; font-size: 16px; }
         .status-tag { display: inline-block; padding: 4px 8px; border-radius: 5px; font-size: 11px; font-weight: bold; text-transform: uppercase; margin-top: 5px; }
-        .status-pending { background: #fff9e6; color: #f4b400; }
-        .status-cancelled { background: #fce8e6; color: var(--red); border-left-color: var(--red) !important; }
+        .status-pending { background: #e8f0fe; color: var(--primary); }
+        .status-cancelled { background: #fce8e6; color: var(--red); }
         
-        /* बटन को नीचे दाईं ओर सेट किया गया */
         .btn-cancel { 
             background: #fff; color: var(--red); border: 1px solid var(--red); 
             padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: bold; 
@@ -81,25 +82,26 @@
         listDiv.innerHTML = "<p style='text-align:center;'>Searching...</p>";
         noDataDiv.style.display = "none";
 
-        db.ref('bookings').orderByChild('phone').equalTo(phone).once('value', (snapshot) => {
+        // Real-time listener (on value) ताकि हर जगह तुरंत कैंसिल दिखे
+        db.ref('bookings').orderByChild('phone').equalTo(phone).on('value', (snapshot) => {
             listDiv.innerHTML = "";
             if (snapshot.exists()) {
                 const data = snapshot.val();
+                // नयी बुकिंग ऊपर दिखाने के लिए रिवर्स सॉर्ट
                 const sortedKeys = Object.keys(data).reverse();
                 
                 sortedKeys.forEach(key => {
                     const b = data[key];
                     const isCancelled = b.status === 'Cancelled';
                     
-                    // HTML में बदलाव: बटन अब सबसे नीचे है
                     listDiv.innerHTML += `
-                        <div class="booking-card" style="${isCancelled ? 'border-left-color:var(--red)' : ''}">
+                        <div class="booking-card ${isCancelled ? 'cancelled-card' : ''}">
                             <div class="b-date">📅 ${b.date} | ⏰ ${b.time}</div>
                             <div class="b-route">📍 ${b.pickup} <br> 🏁 ${b.drop}</div>
                             <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div class="b-fare">💰 ${b.fare}</div>
+                                <div class="b-fare" style="${isCancelled ? 'color:var(--gray)' : ''}">💰 ${b.fare}</div>
                                 <div class="status-tag ${isCancelled ? 'status-cancelled' : 'status-pending'}">
-                                    ${isCancelled ? 'Cancelled' : 'Confirmed'}
+                                    ${isCancelled ? '❌ Cancelled' : '✅ Confirmed'}
                                 </div>
                             </div>
                             ${!isCancelled ? `<button class="btn-cancel" onclick="cancelRide('${key}')">Cancel Ride</button>` : ''}
@@ -108,6 +110,7 @@
                 });
             } else {
                 noDataDiv.style.display = "block";
+                listDiv.innerHTML = "";
             }
         });
     }
@@ -116,13 +119,20 @@
         if(confirm("Kya aap wakayi ye booking cancel karna chahte hain?")) {
             db.ref('bookings/' + bookingId).once('value', (snapshot) => {
                 const b = snapshot.val();
+                
+                // डेटाबेस में स्टेटस अपडेट करना
                 db.ref('bookings/' + bookingId).update({
                     status: 'Cancelled'
                 }).then(() => {
                     alert("Booking Cancel kar di gayi hai.");
-                    const cancelMsg = `*⚠️ BOOKING CANCELLED BY CUSTOMER*\n\n👤 *Name:* ${b.name}\n📞 *Phone:* ${b.phone}\n📅 *Date:* ${b.date}\n📍 *Pickup:* ${b.pickup}\n🏁 *Drop:* ${b.drop}\n💰 *Fare:* ${b.fare}\n\n❌ _Booking status has been updated to Cancelled._`;
+                    
+                    // एडमिन को WhatsApp मैसेज भेजना
+                    const cancelMsg = `*⚠️ BOOKING CANCELLED BY CUSTOMER*\n\n👤 *Name:* ${b.name}\n📞 *Phone:* ${b.phone}\n📅 *Date:* ${b.date}\n📍 *Pickup:* ${b.pickup}\n🏁 *Drop:* ${b.drop}\n💰 *Fare:* ${b.fare}\n\n❌ _Database has been updated._`;
                     window.open(`https://wa.me/919651191446?text=${encodeURIComponent(cancelMsg)}`, "_blank");
-                    fetchBookings();
+                    
+                    // List अपने आप अपडेट हो जाएगी क्योंकि हमने .on('value') लगाया है
+                }).catch((error) => {
+                    alert("Error: " + error.message);
                 });
             });
         }
