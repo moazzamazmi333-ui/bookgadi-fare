@@ -176,6 +176,8 @@
             }
         }
 
+        // ... (ऊपर का CSS और HTML वैसा ही रहेगा, बस loadHistory फंक्शन को बदलें)
+
         function loadHistory() {
             const todayDate = new Date().toLocaleDateString('en-GB'); 
 
@@ -190,22 +192,30 @@
                 if(data) {
                     Object.keys(data).reverse().forEach(id => {
                         const b = data[id];
+                        const isCancelled = (b.status === 'Cancelled');
                         
-                        // Today's Report Calculation
-                        // Ensure your booking dates match 'DD/MM/YYYY' format or adjust here
+                        // Today's Report Calculation (केवल Confirmed बुकिंग का पैसा जोड़ें)
                         if(b.date === todayDate || b.date === new Date().toLocaleDateString()) {
                             count++;
-                            let fareValue = b.fare ? String(b.fare).replace(/[^0-9]/g, '') : "0";
-                            totalFare += parseInt(fareValue) || 0;
+                            if(!isCancelled) {
+                                let fareValue = b.fare ? String(b.fare).replace(/[^0-9]/g, '') : "0";
+                                totalFare += parseInt(fareValue) || 0;
+                            }
                         }
 
                         tbody.innerHTML += `
-                            <tr>
+                            <tr style="${isCancelled ? 'background:#fff0f0; color:#999;' : ''}">
                                 <td style="padding:5px;">${b.time}<br>${b.date}</td>
-                                <td style="padding:5px;"><b>${b.name}</b><br><small>${b.pickup} ➔ ${b.drop}</small></td>
+                                <td style="padding:5px;">
+                                    <b>${b.name}</b> ${isCancelled ? '<span style="color:red; font-size:10px;">[CANCELLED]</span>' : ''}<br>
+                                    <small>${b.pickup} ➔ ${b.drop}</small>
+                                </td>
                                 <td style="padding:5px; text-align:center;">
                                     ₹${b.fare}<br>
-                                    <button onclick="deleteBooking('${id}')" style="border:none; background:none; color:red; cursor:pointer; font-size:16px; margin-top:5px;">🗑️</button>
+                                    <div style="display:flex; gap:5px; justify-content:center; margin-top:5px;">
+                                        ${!isCancelled ? `<button onclick="cancelBookingByAdmin('${id}')" title="Cancel Booking" style="border:none; background:none; cursor:pointer; font-size:16px;">🚫</button>` : ''}
+                                        <button onclick="deleteBooking('${id}')" title="Delete from History" style="border:none; background:none; color:red; cursor:pointer; font-size:16px;">🗑️</button>
+                                    </div>
                                 </td>
                             </tr>
                         `;
@@ -218,6 +228,19 @@
                 document.getElementById('todayTotal').innerText = "₹" + totalFare;
             });
         }
+
+        // नया फंक्शन: एडमिन द्वारा कैंसिल करने के लिए
+        function cancelBookingByAdmin(id) {
+            if(confirm("क्या आप इस बुकिंग को कैंसिल करना चाहते हैं? इससे ड्राइवर और कस्टमर को 'Cancelled' दिखेगा।")) {
+                db.ref('bookings/' + id).update({
+                    status: 'Cancelled'
+                }).then(() => {
+                    alert("Booking Status Updated: Cancelled");
+                });
+            }
+        }
+
+// ... (बाकी deleteBooking और createDriver वाले फंक्शन वैसे ही रहेंगे)
 
         function deleteBooking(id) {
             if(confirm("क्या आप इस बुकिंग को हिस्ट्री से हटाना चाहते हैं?")) {
