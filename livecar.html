@@ -257,6 +257,15 @@ function sendWhatsApp(){
     const msg = `*BookGadi Booking Request*\n\n📅 *Date:* ${date}\n⏰ *Time:* ${time}\n👤 *Name:* ${n}\n📞 *Phone:* ${ph}\n💰 *Fare:* ${f}\n📍 *Pickup:* ${p}\n🏁 *Drop:* ${d}`;
     window.open(`https://wa.me/919651191446?text=${encodeURIComponent(msg)}`, "_blank");
 }
+  let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+});
+
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(err => console.log("SW error:", err));
+}
 
 function toggleFS() { const el = document.getElementById("fullContainer"); if (!document.fullscreenElement) el.requestFullscreen(); else document.exitFullscreen(); }
 function fitRoute() { map.setCenter({lat: 26.5, lng: 82.1}); map.setZoom(9); }
