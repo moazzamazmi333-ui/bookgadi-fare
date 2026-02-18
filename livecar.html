@@ -185,7 +185,7 @@ function calculateFare(){
             const distFromLko = getDistance(LKO_CENTER.lat, LKO_CENTER.lng, pLat, pLng);
 
             if (distFromAzm > 100 && distFromLko > 50) {
-                alert("Maaf kijiye, BookGadi abhi keval Azamgarh (100km) aur Lucknow (50km) area mein hi pickup deti hai.");
+                alert("Maaf Kijiye, BookGadi abhi keval Azamgarh aur Lucknow area mein hi pickup deti hai.");
                 document.getElementById("result").innerHTML = "<div class='info-note' style='color:red; border-color:red;'>Service not provided in this area for pickup.</div>";
                 document.getElementById("waBtn").style.display = "none";
                 return;
