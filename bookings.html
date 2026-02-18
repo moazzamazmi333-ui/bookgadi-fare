@@ -100,15 +100,28 @@
     }
 
     function cancelRide(bookingId) {
-        if(confirm("Kya aap wakayi ye booking cancel karna chahte hain?")) {
+    if(confirm("Kya aap wakayi ye booking cancel karna chahte hain?")) {
+        // पहले डेटाबेस से जानकारी लेते हैं ताकि मैसेज में नाम और रूट भेज सकें
+        db.ref('bookings/' + bookingId).once('value', (snapshot) => {
+            const b = snapshot.val();
+            
+            // Firebase में स्टेटस अपडेट करें
             db.ref('bookings/' + bookingId).update({
                 status: 'Cancelled'
             }).then(() => {
                 alert("Booking Cancel kar di gayi hai.");
-                fetchBookings(); // List refresh karein
+                
+                // WhatsApp मैसेज तैयार करना
+                const cancelMsg = `*⚠️ BOOKING CANCELLED BY CUSTOMER*\n\n👤 *Name:* ${b.name}\n📞 *Phone:* ${b.phone}\n📅 *Date:* ${b.date}\n📍 *Pickup:* ${b.pickup}\n🏁 *Drop:* ${b.drop}\n💰 *Fare:* ${b.fare}\n\n❌ _Booking status has been updated to Cancelled._`;
+                
+                // आपको (Admin) मैसेज भेजने के लिए लिंक
+                window.open(`https://wa.me/919651191446?text=${encodeURIComponent(cancelMsg)}`, "_blank");
+                
+                fetchBookings(); // लिस्ट रिफ्रेश करें
             });
-        }
+        });
     }
+}
 </script>
 
 </body>
