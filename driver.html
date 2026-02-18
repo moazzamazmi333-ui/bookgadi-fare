@@ -27,6 +27,12 @@
         #bookingList { margin-top: 20px; padding-bottom: 100px; }
         .b-card { background: white; border-radius: 16px; padding: 18px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); border: 1px solid #eee; position: relative; overflow: hidden; }
         .b-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--primary); }
+        
+        /* Cancelled Style */
+        .cancelled-card { border-left-color: var(--danger) !important; opacity: 0.7; }
+        .cancelled-card::before { background: var(--danger) !important; }
+        .cancel-badge { background: #fce8e6; color: var(--danger); padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; float: right; margin-bottom: 5px; border: 1px solid var(--danger); }
+
         .b-fare { color: var(--success); font-size: 20px; font-weight: 800; float: right; }
         .b-date { font-size: 12px; color: #777; margin-bottom: 10px; display: block; font-weight: 600; }
         .b-loc { font-size: 14px; margin: 8px 0; display: flex; align-items: flex-start; gap: 8px; }
@@ -112,15 +118,14 @@
         document.getElementById('statusSection').style.display = "block";
         document.getElementById('welcomeName').innerText = "Hi, " + currentName;
         loadBookings();
-        updateGPS(); // First time update
-        gpsInterval = setInterval(updateGPS, 300000); // Auto refresh every 5 minutes (300,000 ms)
+        updateGPS();
+        gpsInterval = setInterval(updateGPS, 300000); 
     }
 
     function loadBookings() {
         const filter = document.getElementById('areaFilter').value.toLowerCase();
         const keyword = filter.substring(0, 4); 
 
-        // आज की तारीख (Format: DD/MM/YYYY जैसा आपके DB में हो)
         const today = new Date();
         const todayStr = String(today.getDate()).padStart(2, '0') + "/" + String(today.getMonth() + 1).padStart(2, '0') + "/" + today.getFullYear();
 
@@ -142,8 +147,8 @@
                 const b = data[k];
                 const pickup = (b.pickup || "").toLowerCase();
                 const bDate = b.date || "";
+                const isCancelled = (b.status === 'Cancelled');
 
-                // सिर्फ आज की तारीख और फ़िल्टर मैच होने पर दिखाएं
                 let dateMatch = (bDate === todayStr);
                 let areaMatch = (filter === "all") || pickup.includes(filter) || pickup.includes(keyword);
 
@@ -151,20 +156,20 @@
                     if(!firstId) firstId = k;
                     count++;
                     const card = document.createElement('div');
-                    card.className = "b-card";
+                    card.className = "b-card" + (isCancelled ? " cancelled-card" : "");
                     card.innerHTML = `
-                        <span class="b-fare">₹${b.fare}</span>
+                        ${isCancelled ? '<span class="cancel-badge">CANCELLED</span>' : `<span class="b-fare">₹${b.fare}</span>`}
                         <span class="b-date">📅 ${b.date} | ⏰ ${b.time}</span>
                         <div class="b-loc"><b>FROM:</b> <span>${b.pickup}</span></div>
                         <div class="b-loc"><b>TO:</b> <span>${b.drop}</span></div>
                         <div class="b-footer">
                             <div style="display: flex; flex-direction: column;">
                                 <span style="font-size:13px; font-weight:600; color:#555;">👤 ${b.name}</span>
-                                <div style="text-align: center; margin-top: 15px;">
+                                ${!isCancelled ? `<div style="text-align: center; margin-top: 15px;">
                                  <span style="font-size:14px; font-weight:bold; color:#1a73e8;">Pay Now</span>
-                               </div>
+                                </div>` : ''}
                             </div>
-                            <a href="tel:9651191446" class="call-btn">📞 Call</a>
+                            ${!isCancelled ? `<a href="tel:9651191446" class="call-btn">📞 Call</a>` : `<span style="color:var(--danger); font-size:12px; font-weight:bold;">Booking Closed</span>`}
                         </div>
                     `;
                     list.appendChild(card);
@@ -192,7 +197,6 @@
                 status: "online", 
                 last_seen: Date.now()
             });
-            console.log("GPS Updated at: " + new Date().toLocaleTimeString());
         }, null, { enableHighAccuracy: true });
     }
 
