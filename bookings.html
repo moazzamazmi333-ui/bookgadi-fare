@@ -14,7 +14,12 @@
         input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; outline: none; box-sizing: border-box; }
         .btn-search { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 10px; margin-top: 10px; font-weight: bold; cursor: pointer; }
         
-        .booking-card { background: white; padding: 15px; border-radius: 15px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-left: 5px solid var(--primary); position: relative; }
+        /* कार्ड में Flexbox जोड़ा गया ताकि बटन नीचे जा सके */
+        .booking-card { 
+            background: white; padding: 15px; border-radius: 15px; margin-bottom: 15px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-left: 5px solid var(--primary); 
+            display: flex; flex-direction: column; position: relative; 
+        }
         .b-date { font-size: 12px; color: #666; }
         .b-route { font-size: 14px; font-weight: bold; margin: 8px 0; color: #333; line-height: 1.4; }
         .b-fare { color: var(--primary); font-weight: bold; font-size: 16px; }
@@ -22,7 +27,12 @@
         .status-pending { background: #fff9e6; color: #f4b400; }
         .status-cancelled { background: #fce8e6; color: var(--red); border-left-color: var(--red) !important; }
         
-        .btn-cancel { background: #fff; color: var(--red); border: 1px solid var(--red); padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; position: absolute; top: 15px; right: 15px; }
+        /* बटन को नीचे दाईं ओर सेट किया गया */
+        .btn-cancel { 
+            background: #fff; color: var(--red); border: 1px solid var(--red); 
+            padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: bold; 
+            cursor: pointer; align-self: flex-end; margin-top: 5px;
+        }
         .btn-cancel:hover { background: var(--red); color: white; }
 
         #noData { text-align: center; color: #888; margin-top: 50px; display: none; }
@@ -81,15 +91,18 @@
                     const b = data[key];
                     const isCancelled = b.status === 'Cancelled';
                     
+                    // HTML में बदलाव: बटन अब सबसे नीचे है
                     listDiv.innerHTML += `
                         <div class="booking-card" style="${isCancelled ? 'border-left-color:var(--red)' : ''}">
                             <div class="b-date">📅 ${b.date} | ⏰ ${b.time}</div>
                             <div class="b-route">📍 ${b.pickup} <br> 🏁 ${b.drop}</div>
-                            <div class="b-fare">💰 ${b.fare}</div>
-                            <div class="status-tag ${isCancelled ? 'status-cancelled' : 'status-pending'}">
-                                ${isCancelled ? 'Cancelled' : 'Confirmed'}
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div class="b-fare">💰 ${b.fare}</div>
+                                <div class="status-tag ${isCancelled ? 'status-cancelled' : 'status-pending'}">
+                                    ${isCancelled ? 'Cancelled' : 'Confirmed'}
+                                </div>
                             </div>
-                            ${!isCancelled ? `<button class="btn-cancel" onclick="cancelRide('${key}')">Cancel</button>` : ''}
+                            ${!isCancelled ? `<button class="btn-cancel" onclick="cancelRide('${key}')">Cancel Ride</button>` : ''}
                         </div>
                     `;
                 });
@@ -100,28 +113,20 @@
     }
 
     function cancelRide(bookingId) {
-    if(confirm("Kya aap wakayi ye booking cancel karna chahte hain?")) {
-        // पहले डेटाबेस से जानकारी लेते हैं ताकि मैसेज में नाम और रूट भेज सकें
-        db.ref('bookings/' + bookingId).once('value', (snapshot) => {
-            const b = snapshot.val();
-            
-            // Firebase में स्टेटस अपडेट करें
-            db.ref('bookings/' + bookingId).update({
-                status: 'Cancelled'
-            }).then(() => {
-                alert("Booking Cancel kar di gayi hai.");
-                
-                // WhatsApp मैसेज तैयार करना
-                const cancelMsg = `*⚠️ BOOKING CANCELLED BY CUSTOMER*\n\n👤 *Name:* ${b.name}\n📞 *Phone:* ${b.phone}\n📅 *Date:* ${b.date}\n📍 *Pickup:* ${b.pickup}\n🏁 *Drop:* ${b.drop}\n💰 *Fare:* ${b.fare}\n\n❌ _Booking status has been updated to Cancelled._`;
-                
-                // आपको (Admin) मैसेज भेजने के लिए लिंक
-                window.open(`https://wa.me/919651191446?text=${encodeURIComponent(cancelMsg)}`, "_blank");
-                
-                fetchBookings(); // लिस्ट रिफ्रेश करें
+        if(confirm("Kya aap wakayi ye booking cancel karna chahte hain?")) {
+            db.ref('bookings/' + bookingId).once('value', (snapshot) => {
+                const b = snapshot.val();
+                db.ref('bookings/' + bookingId).update({
+                    status: 'Cancelled'
+                }).then(() => {
+                    alert("Booking Cancel kar di gayi hai.");
+                    const cancelMsg = `*⚠️ BOOKING CANCELLED BY CUSTOMER*\n\n👤 *Name:* ${b.name}\n📞 *Phone:* ${b.phone}\n📅 *Date:* ${b.date}\n📍 *Pickup:* ${b.pickup}\n🏁 *Drop:* ${b.drop}\n💰 *Fare:* ${b.fare}\n\n❌ _Booking status has been updated to Cancelled._`;
+                    window.open(`https://wa.me/919651191446?text=${encodeURIComponent(cancelMsg)}`, "_blank");
+                    fetchBookings();
+                });
             });
-        });
+        }
     }
-}
 </script>
 
 </body>
