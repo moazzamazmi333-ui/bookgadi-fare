@@ -7,21 +7,28 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        :root { --primary: #1a73e8; }
+        :root { --primary: #1a73e8; --red: #d93025; }
         body { font-family: 'Segoe UI', sans-serif; background: #f8f9fa; margin: 0; padding: 20px; padding-bottom: 80px; }
         .header { text-align: center; margin-bottom: 25px; }
         .search-box { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; outline: none; }
-        button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 10px; margin-top: 10px; font-weight: bold; cursor: pointer; }
+        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; outline: none; box-sizing: border-box; }
+        .btn-search { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 10px; margin-top: 10px; font-weight: bold; cursor: pointer; }
         
-        .booking-card { background: white; padding: 15px; border-radius: 15px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-left: 5px solid var(--primary); }
+        .booking-card { background: white; padding: 15px; border-radius: 15px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-left: 5px solid var(--primary); position: relative; }
         .b-date { font-size: 12px; color: #666; }
-        .b-route { font-size: 15px; font-weight: bold; margin: 8px 0; color: #333; }
-        .b-fare { color: var(--primary); font-weight: bold; }
+        .b-route { font-size: 14px; font-weight: bold; margin: 8px 0; color: #333; line-height: 1.4; }
+        .b-fare { color: var(--primary); font-weight: bold; font-size: 16px; }
+        .status-tag { display: inline-block; padding: 4px 8px; border-radius: 5px; font-size: 11px; font-weight: bold; text-transform: uppercase; margin-top: 5px; }
+        .status-pending { background: #fff9e6; color: #f4b400; }
+        .status-cancelled { background: #fce8e6; color: var(--red); border-left-color: var(--red) !important; }
+        
+        .btn-cancel { background: #fff; color: var(--red); border: 1px solid var(--red); padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; position: absolute; top: 15px; right: 15px; }
+        .btn-cancel:hover { background: var(--red); color: white; }
+
         #noData { text-align: center; color: #888; margin-top: 50px; display: none; }
 
-        /* Bottom Menu Styles */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; height: 65px; display: flex; justify-content: space-around; align-items: center; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); border-top: 1px solid #eee; }
+        /* Bottom Menu */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; height: 65px; display: flex; justify-content: space-around; align-items: center; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); border-top: 1px solid #eee; z-index: 1000; }
         .nav-item { text-align: center; cursor: pointer; flex: 1; text-decoration: none; color: inherit; }
         .nav-item div { font-size: 18px; }
         .nav-item span { font-size: 11px; font-weight: bold; color: #666; display: block; }
@@ -30,14 +37,13 @@
 <body>
 
 <div class="header">
-    <img src="https://static.wixstatic.com/media/843689_1939d114418d412a8c15a739fccae1d0~mv2.png" width="80">
+    <img src="https://static.wixstatic.com/media/843689_497878e241e348adbd167a8cc7462f1b~mv2.png" width="80">
     <h2>Meri Bookings</h2>
 </div>
 
 <div class="search-box">
-    <p style="margin-top:0; font-size:14px; color:#555;">अपनी बुकिंग देखने के लिए नंबर डालें:</p>
     <input type="tel" id="userPhone" placeholder="Mobile Number (10 digit)">
-    <button onclick="fetchBookings()">Check Bookings</button>
+    <button class="btn-search" onclick="fetchBookings()">Check Bookings</button>
 </div>
 
 <div id="bookingList"></div>
@@ -51,7 +57,6 @@
 </div>
 
 <script>
-    // Firebase Setup (वही जो आपके मेन पेज पर है)
     const firebaseConfig = { databaseURL: "https://bookgadi-97c98-default-rtdb.firebaseio.com", projectId: "bookgadi-97c98" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
@@ -63,23 +68,28 @@
         
         if(phone.length < 10) return alert("Sahi number dalein");
         
-        listDiv.innerHTML = "Loading...";
+        listDiv.innerHTML = "<p style='text-align:center;'>Searching...</p>";
         noDataDiv.style.display = "none";
 
         db.ref('bookings').orderByChild('phone').equalTo(phone).once('value', (snapshot) => {
             listDiv.innerHTML = "";
             if (snapshot.exists()) {
                 const data = snapshot.val();
-                // बुकिंग्स को उल्टा दिखाना (नई सबसे ऊपर)
                 const sortedKeys = Object.keys(data).reverse();
                 
                 sortedKeys.forEach(key => {
                     const b = data[key];
+                    const isCancelled = b.status === 'Cancelled';
+                    
                     listDiv.innerHTML += `
-                        <div class="booking-card">
+                        <div class="booking-card" style="${isCancelled ? 'border-left-color:var(--red)' : ''}">
                             <div class="b-date">📅 ${b.date} | ⏰ ${b.time}</div>
                             <div class="b-route">📍 ${b.pickup} <br> 🏁 ${b.drop}</div>
-                            <div class="b-fare">💰 Fare: ${b.fare}</div>
+                            <div class="b-fare">💰 ${b.fare}</div>
+                            <div class="status-tag ${isCancelled ? 'status-cancelled' : 'status-pending'}">
+                                ${isCancelled ? 'Cancelled' : 'Confirmed'}
+                            </div>
+                            ${!isCancelled ? `<button class="btn-cancel" onclick="cancelRide('${key}')">Cancel</button>` : ''}
                         </div>
                     `;
                 });
@@ -87,6 +97,17 @@
                 noDataDiv.style.display = "block";
             }
         });
+    }
+
+    function cancelRide(bookingId) {
+        if(confirm("Kya aap wakayi ye booking cancel karna chahte hain?")) {
+            db.ref('bookings/' + bookingId).update({
+                status: 'Cancelled'
+            }).then(() => {
+                alert("Booking Cancel kar di gayi hai.");
+                fetchBookings(); // List refresh karein
+            });
+        }
     }
 </script>
 
