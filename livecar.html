@@ -270,8 +270,6 @@ function useMyLocation(){
     }
 }
 
-// ... (बाकी सारा ऊपर का HTML/CSS कोड वैसा ही रहेगा)
-
 function calculateFare(){
     const p = document.getElementById("pickup").value;
     const d = document.getElementById("drop").value;
@@ -279,31 +277,29 @@ function calculateFare(){
 
     directionsService.route({ origin: p, destination: d, travelMode: 'DRIVING' }, (res, status) => {
         if (status === 'OK') {
-            
-            // --- केवल यह हिस्सा अपडेट किया गया है (Location Lock) ---
             const leg = res.routes[0].legs[0];
             const pLat = leg.start_location.lat();
             const pLng = leg.start_location.lng();
 
+            // --- LOCATION LOCK LOGIC ---
             const distFromAzm = getDistance(AZM.lat, AZM.lng, pLat, pLng);
             const distFromLko = getDistance(LKO.lat, LKO.lng, pLat, pLng);
 
             if (distFromAzm > 100 && distFromLko > 50) {
-                alert("Maaf kijiye, hum abhi keval Azamgarh (100km) aur Lucknow (50km) ke pickup lete hain.");
+                alert("Maaf kijiye, BookGadi abhi keval Azamgarh (100km) aur Lucknow (50km) area mein hi pickup deti hai.");
                 return;
             }
-            // ---------------------------------------------------
+            // ---------------------------
 
             directionsRenderer.setDirections(res);
             const km = leg.distance.value / 1000;
-            const time = leg.duration.text;
             const rate = Number(document.getElementById("vehicle").value);
             const isRound = document.getElementById("roundtrip").checked;
             let fare = isRound ? Math.round(km * rate * 2 + 300) : Math.round(250 + km * rate);
             
             document.getElementById("result").innerHTML = `
                 <div class="fare-card">
-                    <b>Distance:</b> ${km.toFixed(1)} km | <b>Time:</b> ${time}<br>
+                    <b>Distance:</b> ${km.toFixed(1)} km | <b>Time:</b> ${leg.duration.text}<br>
                     <b>Est. Fare:</b> <span id="finalFare" style="color:var(--primary); font-size:22px;">₹${fare}</span>
                     <div class="info-note">⚠️ Toll, State Tax & Parking extra as per actual.</div>
                 </div>`;
@@ -316,8 +312,6 @@ function calculateFare(){
         }
     });
 }
-
-// ... (बाकी सारा नीचे का कोड वैसा ही रहेगा)
 
 function openBooking(){ document.getElementById("userForm").style.display = "block"; document.getElementById("waBtn").style.display = "none"; }
 
