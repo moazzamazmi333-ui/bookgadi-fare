@@ -169,54 +169,40 @@ function calculateFare(){
 
 /* [SECTION: FIXED GEMINI AI LOGIC] */
 async function askBookgadiAI() {
+    const inputEl = document.getElementById("aiInput");
+    const chatDisplay = document.getElementById("aiResponse");
+    const userInput = inputEl.value.trim();
+
+    if (!userInput) return;
+
+    chatDisplay.innerHTML += `<div><b>Aap:</b> ${userInput}</div>`;
+    inputEl.value = "";
+
     try {
-        const inputEl = document.getElementById("aiInput");
-        const chatDisplay = document.getElementById("aiResponse");
-        const userInput = inputEl.value.trim();
-
-        if (!userInput) return;
-
-        // User ka message screen pe dikhayein
-        chatDisplay.innerHTML += `<div style="margin-bottom:8px;"><b>Aap:</b> ${userInput}</div>`;
-        inputEl.value = ""; // Input clear karein
-        chatDisplay.scrollTop = chatDisplay.scrollHeight;
-
-        const systemPrompt = "Tum Bookgadi ke assistant ho. Azamgarh aur Lucknow ke liye taxi rates: SUV ₹12/km, Sedan ₹10/km. One-way: 250 + km*rate. Round: km*rate*2 + 300. Polite Hinglish mein jawab do.";
-
-        console.log("Sending request to Gemini...");
-
         const response = await fetch(GEMINI_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                contents: [{
-                    parts: [{ text: systemPrompt + "\nUser Question: " + userInput }]
-                }]
+                contents: [{ parts: [{ text: "Tum Bookgadi taxi ke assistant ho. User ka sawal: " + userInput }] }]
             })
         });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("API Error Response:", errorText);
-            chatDisplay.innerHTML += `<div style="color:red">Error: ${response.status}. Please check console.</div>`;
+        const data = await response.json();
+
+        // Agar abhi bhi error hai toh yahan details dikhengi
+        if (data.error) {
+            console.error("Google Error:", data.error.message);
+            chatDisplay.innerHTML += `<div style="color:red">Google Error: ${data.error.message}</div>`;
             return;
         }
 
-        const data = await response.json();
-        
-        if (data.candidates && data.candidates[0].content.parts[0].text) {
-            const reply = data.candidates[0].content.parts[0].text;
-            chatDisplay.innerHTML += `<div style="color:var(--primary); margin-bottom:8px;"><b>AI:</b> ${reply}</div>`;
-        } else {
-            console.error("Unexpected Data Format:", data);
-            chatDisplay.innerHTML += `<div style="color:orange">AI ne jawab nahi diya. Dubara koshish karein.</div>`;
-        }
-
+        const reply = data.candidates[0].content.parts[0].text;
+        chatDisplay.innerHTML += `<div style="color:var(--primary)"><b>AI:</b> ${reply}</div>`;
         chatDisplay.scrollTop = chatDisplay.scrollHeight;
 
     } catch (err) {
-        console.error("Critical Function Error:", err);
-        document.getElementById("aiResponse").innerHTML += `<div style="color:red">Function error! Console check karein.</div>`;
+        console.error("Detailed Error:", err);
+        chatDisplay.innerHTML += `<div style="color:red">Connection Error! Network check karein.</div>`;
     }
 }
 
