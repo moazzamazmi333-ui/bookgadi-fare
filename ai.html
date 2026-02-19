@@ -2,88 +2,78 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BookGadi AI Support</title>
+    <title>BookGadi AI - Gemini 2.5 Edition</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; }
-        .chat-card { width: 100%; max-width: 400px; background: white; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); height: 550px; display: flex; flex-direction: column; overflow: hidden; }
-        .header { background: #1a73e8; color: white; padding: 15px; text-align: center; font-weight: bold; font-size: 18px; }
-        #chatBox { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: #fafafa; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .chat-container { width: 100%; max-width: 400px; background: white; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); display: flex; flex-direction: column; height: 550px; overflow: hidden; }
+        .header { background: #1a73e8; color: white; padding: 15px; text-align: center; font-weight: bold; font-size: 1.1rem; }
+        #chatDisplay { flex: 1; padding: 15px; overflow-y: auto; background: #ffffff; display: flex; flex-direction: column; gap: 10px; }
         .msg { padding: 10px 14px; border-radius: 12px; font-size: 14px; max-width: 80%; line-height: 1.4; }
         .user { background: #1a73e8; color: white; align-self: flex-end; border-radius: 12px 12px 0 12px; }
-        .ai { background: #e9e9eb; color: #333; align-self: flex-start; border-radius: 12px 12px 12px 0; }
-        .input-area { padding: 15px; border-top: 1px solid #eee; display: flex; background: white; }
-        input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 25px; outline: none; }
-        button { background: #1a73e8; color: white; border: none; padding: 10px 20px; border-radius: 25px; margin-left: 8px; cursor: pointer; font-weight: bold; }
-        .error { color: #d93025; font-size: 12px; text-align: center; margin-top: 5px; }
+        .ai { background: #f1f0f0; color: #333; align-self: flex-start; border-radius: 12px 12px 12px 0; }
+        .input-area { border-top: 1px solid #ddd; padding: 15px; display: flex; gap: 10px; background: #fff; }
+        input { flex: 1; padding: 10px 15px; border: 1px solid #ccc; border-radius: 25px; outline: none; }
+        button { background: #1a73e8; color: white; border: none; padding: 10px 20px; border-radius: 25px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="chat-card">
-    <div class="header">🚖 BookGadi Assistant</div>
-    <div id="chatBox">
-        <div class="ai">Namaste! Main BookGadi AI hoon. Main aapki kya madad kar sakta hoon?</div>
+<div class="chat-container">
+    <div class="header">🚖 BookGadi AI (v2.5)</div>
+    <div id="chatDisplay">
+        <div class="ai">Namaste! Main Gemini 2.5 powered BookGadi AI hoon. Main aapki kya madad kar sakta hoon?</div>
     </div>
     <div class="input-area">
-        <input type="text" id="userInput" placeholder="Yahan apna sawal likhein..." onkeypress="if(event.key==='Enter') startChat()">
-        <button onclick="startChat()">Send</button>
+        <input type="text" id="userInput" placeholder="Kuch likhein..." onkeypress="if(event.key==='Enter') sendMessage()">
+        <button onclick="sendMessage()">Bhejein</button>
     </div>
 </div>
 
 <script>
-    // ************************************************************
-    // APNI NAYI API KEY NICHE QUOTES KE ANDAR DALEIN
-    const MY_API_KEY = "AIzaSyA7JplhhVHvkZH3WWfjInKa_LUQW4PHsC0"; 
-    // ************************************************************
+    // ********* APNI NAYI API KEY NICHE DALEIN *********
+    const API_KEY = "AIzaSyA7JplhhVHvkZH3WWfjInKa_LUQW4PHsC0"; 
+    // *************************************************
 
-    async function startChat() {
+    async function sendMessage() {
         const input = document.getElementById("userInput");
-        const box = document.getElementById("chatBox");
+        const display = document.getElementById("chatDisplay");
         const text = input.value.trim();
-        
         if (!text) return;
-        if (MY_API_KEY === "PASTE_YOUR_NEW_API_KEY_HERE") {
-            alert("Kripya pehle code mein apni API Key dalein!");
-            return;
-        }
 
-        // Display user message
-        box.innerHTML += `<div class="msg user">${text}</div>`;
+        display.innerHTML += `<div class="msg user">${text}</div>`;
         input.value = "";
-        box.scrollTop = box.scrollHeight;
+        display.scrollTop = display.scrollHeight;
 
-        // Show typing indicator
-        const tempId = "loading-" + Date.now();
-        box.innerHTML += `<div class="msg ai" id="${tempId}">...</div>`;
+        const loadingId = "load-" + Date.now();
+        display.innerHTML += `<div class="msg ai" id="${loadingId}">...</div>`;
 
-        // FIXED URL: v1 version with gemini-1.5-flash
-        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${MY_API_KEY}`;
+        // FIXED: Using the exact model name from your link
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
 
         try {
             const response = await fetch(url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    contents: [{ parts: [{ text: "You are the AI assistant for BookGadi.com. Answer in friendly Hinglish. Question: " + text }] }]
+                    contents: [{ parts: [{ text: "You are the expert assistant for BookGadi.com. Answer in Hinglish. Question: " + text }] }]
                 })
             });
 
             const data = await response.json();
-            const aiMsgDiv = document.getElementById(tempId);
+            const aiDiv = document.getElementById(loadingId);
 
             if (data.candidates && data.candidates[0].content) {
-                aiMsgDiv.innerText = data.candidates[0].content.parts[0].text;
+                aiDiv.innerText = data.candidates[0].content.parts[0].text;
             } else if (data.error) {
-                aiMsgDiv.innerHTML = `<span class="error">Error: ${data.error.message}</span>`;
-                console.error("API Error:", data.error);
+                aiDiv.style.color = "red";
+                aiDiv.innerText = "Error: " + data.error.message;
             } else {
-                aiMsgDiv.innerText = "Maaf kijiye, main abhi jawab nahi de paa raha hoon.";
+                aiDiv.innerText = "Maaf kijiye, main abhi jawab nahi de paa raha hoon.";
             }
         } catch (e) {
-            document.getElementById(tempId).innerText = "Network Error! Connection check karein.";
+            document.getElementById(loadingId).innerText = "Network Error! Connection check karein.";
         }
-        box.scrollTop = box.scrollHeight;
+        display.scrollTop = display.scrollHeight;
     }
 </script>
 
