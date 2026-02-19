@@ -172,16 +172,14 @@ async function askGemini() {
     const text = input.value.trim();
     if(!text) return;
 
-    // User message dikhayein
-    display.innerHTML += `<div style="background:var(--primary); color:white; padding:8px; border-radius:8px; align-self:flex-end; margin-bottom:5px;">${text}</div>`;
+    display.innerHTML += `<div style="background:var(--primary); color:white; padding:8px; border-radius:8px; align-self:flex-end;">${text}</div>`;
     input.value = "";
 
-    // Loading indicator
     const loadingId = "ai-" + Date.now();
     display.innerHTML += `<div id="${loadingId}" style="background:#eee; padding:8px; border-radius:8px; align-self:flex-start;">Thinking...</div>`;
     display.scrollTop = display.scrollHeight;
 
-    // Sahi URL format
+    // Sahi Model aur URL
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
     try {
@@ -189,24 +187,26 @@ async function askGemini() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                contents: [{
-                    parts: [{ text: "You are the official assistant for BookGadi.com. Answer in friendly Hinglish: " + text }]
-                }]
+                contents: [{ parts: [{ text: text }] }]
             })
         });
 
         const data = await response.json();
+        console.log("Gemini Full Response:", data); // Check this in F12 Console
+
         const aiDiv = document.getElementById(loadingId);
 
-        // Response check karein
         if (data.candidates && data.candidates[0].content) {
             aiDiv.innerText = data.candidates[0].content.parts[0].text;
+        } else if (data.error) {
+            // Agar API key ya quota ka error hai
+            aiDiv.innerText = "API Error: " + data.error.message;
         } else {
-            aiDiv.innerText = "Sorry, main abhi jawab nahi de paa raha hoon.";
-            console.log("Error Detail:", data);
+            // Agar safety filters ne block kiya hai
+            aiDiv.innerText = "AI ne message block kiya hai. Kuch aur puchiye.";
         }
     } catch (e) {
-        document.getElementById(loadingId).innerText = "Network Error! Please try again.";
+        document.getElementById(loadingId).innerText = "Network Error!";
     }
     display.scrollTop = display.scrollHeight;
 }
