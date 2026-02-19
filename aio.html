@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <title>BookGadi AI - Gemini 2.5 Edition</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .chat-container { width: 100%; max-width: 400px; background: white; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); display: flex; flex-direction: column; height: 550px; overflow: hidden; }
+        .header { background: #1a73e8; color: white; padding: 15px; text-align: center; font-weight: bold; font-size: 1.1rem; }
+        #chatDisplay { flex: 1; padding: 15px; overflow-y: auto; background: #ffffff; display: flex; flex-direction: column; gap: 10px; }
+        .msg { padding: 10px 14px; border-radius: 12px; font-size: 14px; max-width: 80%; line-height: 1.4; }
+        .user { background: #1a73e8; color: white; align-self: flex-end; border-radius: 12px 12px 0 12px; }
+        .ai { background: #f1f0f0; color: #333; align-self: flex-start; border-radius: 12px 12px 12px 0; }
+        .input-area { border-top: 1px solid #ddd; padding: 15px; display: flex; gap: 10px; background: #fff; }
+        input { flex: 1; padding: 10px 15px; border: 1px solid #ccc; border-radius: 25px; outline: none; }
+        button { background: #1a73e8; color: white; border: none; padding: 10px 20px; border-radius: 25px; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="chat-container">
+    <div class="header">🚖 BookGadi AI (v2.5)</div>
+    <div id="chatDisplay">
+        <div class="ai">Namaste! Main Gemini 2.5 powered BookGadi AI hoon. Main aapki kya madad kar sakta hoon?</div>
+    </div>
+    <div class="input-area">
+        <input type="text" id="userInput" placeholder="Kuch likhein..." onkeypress="if(event.key==='Enter') sendMessage()">
+        <button onclick="sendMessage()">Bhejein</button>
+    </div>
+</div>
+
+<script>
+    // ********* APNI NAYI API KEY NICHE DALEIN *********
+    const API_KEY = "YAHAN_APNI_NEW_KEY_DALEIN"; 
+    // *************************************************
+
+    async function sendMessage() {
+        const input = document.getElementById("userInput");
+        const display = document.getElementById("chatDisplay");
+        const text = input.value.trim();
+        if (!text) return;
+
+        display.innerHTML += `<div class="msg user">${text}</div>`;
+        input.value = "";
+        display.scrollTop = display.scrollHeight;
+
+        const loadingId = "load-" + Date.now();
+        display.innerHTML += `<div class="msg ai" id="${loadingId}">...</div>`;
+
+        // FIXED: Using the exact model name from your link
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
+
+        try {
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: "You are the expert assistant for BookGadi.com. Answer in Hinglish. Question: " + text }] }]
+                })
+            });
+
+            const data = await response.json();
+            const aiDiv = document.getElementById(loadingId);
+
+            if (data.candidates && data.candidates[0].content) {
+                aiDiv.innerText = data.candidates[0].content.parts[0].text;
+            } else if (data.error) {
+                aiDiv.style.color = "red";
+                aiDiv.innerText = "Error: " + data.error.message;
+            } else {
+                aiDiv.innerText = "Maaf kijiye, main abhi jawab nahi de paa raha hoon.";
+            }
+        } catch (e) {
+            document.getElementById(loadingId).innerText = "Network Error! Connection check karein.";
+        }
+        display.scrollTop = display.scrollHeight;
+    }
+</script>
+
+</body>
+</html>
