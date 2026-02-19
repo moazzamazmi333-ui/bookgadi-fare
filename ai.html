@@ -151,7 +151,7 @@
 
         let apiKey = localStorage.getItem("bg_key");
         if (!apiKey) {
-            apiKey = prompt("Kripya Google AI Studio API Key enter karein:");
+            apiKey = prompt("AIzaSyAO4VOlOAWGtHjKkNUrMHvgtdldTnUqAbk");
             if (apiKey) localStorage.setItem("bg_key", apiKey);
             else return;
         }
@@ -163,8 +163,8 @@
         chatDisplay.innerHTML += `<div class="ai-msg typing" id="${loadingId}">BookGadi AI soch raha hai...</div>`;
         chatDisplay.scrollTop = chatDisplay.scrollHeight;
 
-        // UPDATED: v1 endpoint aur gemini-1.5-flash-latest ka use
-        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        // Try gemini-1.5-flash first with v1beta
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
         try {
             const response = await fetch(url, {
@@ -173,7 +173,7 @@
                 body: JSON.stringify({
                     contents: [{ 
                         parts: [{ 
-                            text: "You are the helpful AI assistant for BookGadi.com. Answer in Hinglish. Context: BookGadi provides taxi booking and car rentals. Question: " + text 
+                            text: "You are the helpful AI assistant for BookGadi.com. Answer in Hinglish. Answer shortly. Context: BookGadi provides taxi booking and car rentals. Question: " + text 
                         }] 
                     }]
                 })
@@ -183,9 +183,9 @@
             const loadingEl = document.getElementById(loadingId);
 
             if (data.error) {
-                // Agar abhi bhi error aaye, toh error detail screen par dikhegi
-                loadingEl.innerHTML = `<span style="color:red;">Error: ${data.error.message}</span>`;
-                console.error("Full Error:", data.error);
+                // Detailed error handling
+                console.error("API Error:", data.error);
+                loadingEl.innerHTML = `<span style="color:red;">Error: ${data.error.message}</span><br><small>Tip: Check if your API Key is restricted to a specific version.</small>`;
             } else if (data.candidates && data.candidates[0].content) {
                 const aiReply = data.candidates[0].content.parts[0].text;
                 loadingEl.classList.remove("typing");
@@ -202,7 +202,7 @@
 
     function clearKey() {
         localStorage.removeItem("bg_key");
-        alert("API Key remove kar di gayi hai.");
+        alert("API Key reset ho gayi hai.");
         location.reload();
     }
 </script>
