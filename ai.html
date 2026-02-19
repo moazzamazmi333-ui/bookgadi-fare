@@ -99,7 +99,8 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 const GEMINI_API_KEY = "AIzaSyDHWLdtu1lkIq8RZjGbmfqJTqUPWMmLbK4"; // Paste your API key here
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+// Is URL ko update karein (v1beta ko v1 kar dein ya niche wala copy karein)
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
 /* [SECTION: MAPS & TRACKING LOGIC] */
 let map, directionsService, directionsRenderer, geocoder;
