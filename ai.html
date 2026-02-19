@@ -141,7 +141,6 @@
     const inputEl = document.getElementById("userInput");
     const chatDisplay = document.getElementById("chatDisplay");
 
-    // "Enter" key se message bhejne ke liye
     inputEl.addEventListener("keypress", (e) => {
         if (e.key === "Enter") sendMessage();
     });
@@ -150,29 +149,22 @@
         const text = inputEl.value.trim();
         if (!text) return;
 
-        // API Key management
         let apiKey = localStorage.getItem("bg_key");
         if (!apiKey) {
-            apiKey = prompt("Kripya apni Google AI Studio API Key enter karein (Ye sirf aapke browser mein save hogi):");
-            if (apiKey) {
-                localStorage.setItem("bg_key", apiKey);
-            } else {
-                alert("API Key ke bina chat kaam nahi karegi.");
-                return;
-            }
+            apiKey = prompt("Kripya Google AI Studio API Key enter karein:");
+            if (apiKey) localStorage.setItem("bg_key", apiKey);
+            else return;
         }
 
-        // 1. User ka message screen par dikhayein
         chatDisplay.innerHTML += `<div class="user-msg">${text}</div>`;
         inputEl.value = "";
         
-        // 2. Loading indicator dikhayein
         const loadingId = "load-" + Date.now();
         chatDisplay.innerHTML += `<div class="ai-msg typing" id="${loadingId}">BookGadi AI soch raha hai...</div>`;
         chatDisplay.scrollTop = chatDisplay.scrollHeight;
 
-        // 3. API Setup
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        // UPDATED: v1 endpoint aur gemini-1.5-flash-latest ka use
+        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
         try {
             const response = await fetch(url, {
@@ -181,7 +173,7 @@
                 body: JSON.stringify({
                     contents: [{ 
                         parts: [{ 
-                            text: "You are the helpful AI assistant for BookGadi.com. Your tone is professional yet friendly. Answer in Hinglish. Website context: BookGadi provides taxi booking, outstation cabs, and car rentals. Question: " + text 
+                            text: "You are the helpful AI assistant for BookGadi.com. Answer in Hinglish. Context: BookGadi provides taxi booking and car rentals. Question: " + text 
                         }] 
                     }]
                 })
@@ -191,25 +183,26 @@
             const loadingEl = document.getElementById(loadingId);
 
             if (data.error) {
+                // Agar abhi bhi error aaye, toh error detail screen par dikhegi
                 loadingEl.innerHTML = `<span style="color:red;">Error: ${data.error.message}</span>`;
-            } else {
-                // 4. AI ka response dikhayein
+                console.error("Full Error:", data.error);
+            } else if (data.candidates && data.candidates[0].content) {
                 const aiReply = data.candidates[0].content.parts[0].text;
                 loadingEl.classList.remove("typing");
                 loadingEl.innerText = aiReply;
+            } else {
+                loadingEl.innerText = "Maaf kijiye, main abhi jawab nahi de paa raha hoon.";
             }
         } catch (err) {
-            const loadingEl = document.getElementById(loadingId);
-            loadingEl.innerText = "Network Error! Kripya internet check karein.";
+            document.getElementById(loadingId).innerText = "Network Error! Connection check karein.";
         }
         
-        // Auto scroll to bottom
         chatDisplay.scrollTop = chatDisplay.scrollHeight;
     }
 
     function clearKey() {
         localStorage.removeItem("bg_key");
-        alert("API Key remove kar di gayi hai. Agli baar naya key dalna hoga.");
+        alert("API Key remove kar di gayi hai.");
         location.reload();
     }
 </script>
