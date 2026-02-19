@@ -2,72 +2,68 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BookGadi Fixed AI</title>
+    <title>BookGadi AI Fix</title>
     <style>
-        body { font-family: sans-serif; background: #f4f4f4; display: flex; justify-content: center; padding: 20px; }
-        .chat-card { width: 100%; max-width: 400px; background: white; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); height: 500px; display: flex; flex-direction: column; }
-        .header { background: #1a73e8; color: white; padding: 15px; border-radius: 12px 12px 0 0; text-align: center; }
-        #chatContent { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        .bubble { padding: 10px; border-radius: 10px; max-width: 80%; font-size: 14px; }
-        .user { background: #e3f2fd; align-self: flex-end; }
-        .ai { background: #f1f1f1; align-self: flex-start; }
-        .input-group { display: flex; padding: 10px; border-top: 1px solid #ddd; }
-        input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; outline: none; }
-        button { background: #1a73e8; color: white; border: none; padding: 10px 15px; margin-left: 5px; cursor: pointer; border-radius: 5px; }
+        body { font-family: Arial; background: #f0f2f5; padding: 20px; display: flex; justify-content: center; }
+        .chat-wrap { width: 100%; max-width: 400px; background: #fff; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); height: 500px; display: flex; flex-direction: column; }
+        #display { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+        .u { align-self: flex-end; background: #007bff; color: white; padding: 8px; border-radius: 8px; font-size: 14px; }
+        .a { align-self: flex-start; background: #e9e9eb; padding: 8px; border-radius: 8px; font-size: 14px; }
+        .input-bar { display: flex; padding: 10px; border-top: 1px solid #ddd; }
+        input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 5px; }
+        button { background: #007bff; color: #fff; border: none; padding: 8px 15px; cursor: pointer; border-radius: 5px; margin-left: 5px; }
     </style>
 </head>
 <body>
 
-<div class="chat-card">
-    <div class="header">BookGadi AI Assistant</div>
-    <div id="chatContent"></div>
-    <div class="input-group">
-        <input type="text" id="userMsg" placeholder="Sawal likhein...">
-        <button onclick="startChat()">Bhejein</button>
+<div class="chat-wrap">
+    <div id="display"></div>
+    <div class="input-bar">
+        <input type="text" id="msg" placeholder="Type here...">
+        <button onclick="send()">Send</button>
     </div>
 </div>
 
 <script>
-    async function startChat() {
-        const input = document.getElementById("userMsg");
-        const display = document.getElementById("chatContent");
-        const text = input.value.trim();
-        if (!text) return;
+    async function send() {
+        const input = document.getElementById("msg");
+        const display = document.getElementById("display");
+        const val = input.value.trim();
+        if (!val) return;
 
-        // Reset local storage agar purani key blocked hai
-        let key = localStorage.getItem("bg_key_new");
+        // Force a new key if it fails (Use the new one you just made)
+        let key = localStorage.getItem("bg_key_v4");
         if (!key) {
-            key = prompt("Nayi API Key (Step 1 wali) yahan dalein:");
-            if (key) localStorage.setItem("AIzaSyA7JplhhVHvkZH3WWfjInKa_LUQW4PHsC0", key);
-            else return;
+            key = prompt("Please enter your NEW API key:");
+            if (key) localStorage.setItem("bg_key_v4", key); else return;
         }
 
-        display.innerHTML += `<div class="bubble user">${text}</div>`;
+        display.innerHTML += `<div class="u">${val}</div>`;
         input.value = "";
 
-        // Sabse stable endpoint aur model name
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+        // Specifically using 'gemini-1.5-flash-8b' which is highly stable
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b:generateContent?key=${key}`;
 
         try {
-            const response = await fetch(url, {
+            const res = await fetch(url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    contents: [{ parts: [{ text: "You are BookGadi AI. Answer in Hinglish: " + text }] }]
+                    contents: [{ parts: [{ text: "You are the assistant for BookGadi.com. Answer in Hinglish. User: " + val }] }]
                 })
             });
 
-            const data = await response.json();
+            const data = await res.json();
             
             if (data.error) {
-                display.innerHTML += `<div class="bubble ai" style="color:red;">Error: ${data.error.message}</div>`;
+                display.innerHTML += `<div class="a" style="color:red;">API Error: ${data.error.message}</div>`;
+                // If it's a 404/Not Found, clear key to try again
+                if(data.error.code === 404) localStorage.removeItem("bg_key_v4");
             } else {
-                const aiResponse = data.candidates[0].content.parts[0].text;
-                display.innerHTML += `<div class="bubble ai">${aiResponse}</div>`;
+                display.innerHTML += `<div class="a">${data.candidates[0].content.parts[0].text}</div>`;
             }
         } catch (e) {
-            display.innerHTML += `<div class="bubble ai" style="color:red;">Network Error! Please check internet or key.</div>`;
+            display.innerHTML += `<div class="a" style="color:red;">Network Error!</div>`;
         }
         display.scrollTop = display.scrollHeight;
     }
