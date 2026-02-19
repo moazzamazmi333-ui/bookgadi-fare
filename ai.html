@@ -3,87 +3,175 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BookGadi AI Chat</title>
+    <title>BookGadi AI Assistant</title>
     <style>
-        /* Chat Box Design */
-        body { font-family: Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; display: flex; justify-content: center; }
-        
+        /* Modern & Clean Design */
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #f4f7f6; 
+            margin: 0; 
+            padding: 20px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            height: 100vh;
+        }
+
         .chat-container { 
             width: 100%; 
-            max-width: 400px; 
+            max-width: 450px; 
             background: white; 
-            border-radius: 15px; 
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2); 
+            border-radius: 20px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
             display: flex; 
             flex-direction: column; 
             overflow: hidden;
-            height: 500px; /* Isse height fix ho jayegi */
+            height: 600px; 
         }
 
-        .chat-header { background: #1a73e8; color: white; padding: 15px; text-align: center; font-weight: bold; }
+        .chat-header { 
+            background: #1a73e8; 
+            color: white; 
+            padding: 20px; 
+            text-align: center; 
+            font-weight: bold; 
+            font-size: 1.2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
         #chatDisplay { 
             flex: 1; 
-            padding: 15px; 
+            padding: 20px; 
             overflow-y: auto; 
-            background: #ffffff; 
+            background: #fdfdfd; 
             display: flex; 
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
+            scroll-behavior: smooth;
         }
 
-        .input-area { border-top: 1px solid #ddd; padding: 10px; display: flex; gap: 5px; background: #eee; }
+        /* Message Bubbles */
+        .user-msg { 
+            background: #1a73e8; 
+            color: white; 
+            padding: 10px 15px; 
+            border-radius: 15px 15px 0 15px; 
+            align-self: flex-end; 
+            max-width: 85%; 
+            word-wrap: break-word;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
 
-        input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; outline: none; }
+        .ai-msg { 
+            background: #e9ecef; 
+            color: #333; 
+            padding: 10px 15px; 
+            border-radius: 15px 15px 15px 0; 
+            align-self: flex-start; 
+            max-width: 85%; 
+            word-wrap: break-word;
+            line-height: 1.4;
+        }
 
-        button { background: #1a73e8; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; }
+        .input-area { 
+            border-top: 1px solid #eee; 
+            padding: 15px; 
+            display: flex; 
+            gap: 10px; 
+            background: #fff; 
+        }
 
-        .user-msg { background: #d1e7ff; padding: 8px 12px; border-radius: 10px; align-self: flex-end; max-width: 80%; }
-        .ai-msg { background: #f1f0f0; padding: 8px 12px; border-radius: 10px; align-self: flex-start; max-width: 80%; }
+        input { 
+            flex: 1; 
+            padding: 12px; 
+            border: 1px solid #ddd; 
+            border-radius: 25px; 
+            outline: none; 
+            font-size: 14px;
+        }
+
+        button#sendBtn { 
+            background: #1a73e8; 
+            color: white; 
+            border: none; 
+            padding: 0 20px; 
+            border-radius: 25px; 
+            cursor: pointer; 
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        button#sendBtn:hover { background: #1557b0; }
+
+        .reset-btn {
+            font-size: 11px; 
+            background: none; 
+            color: #888; 
+            border: none; 
+            padding: 10px; 
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        /* Typing Dots Animation */
+        .typing { font-style: italic; color: #888; font-size: 12px; }
     </style>
 </head>
 <body>
 
 <div class="chat-container">
-    <div class="chat-header">🚖 BookGadi AI Assistant</div>
+    <div class="chat-header">
+        <span>🚖 BookGadi AI</span>
+        <button onclick="clearKey()" style="background:none; border:none; color:white; cursor:pointer; font-size:12px;">Reset Key</button>
+    </div>
     
     <div id="chatDisplay">
-        <div class="ai-msg">Namaste! Main BookGadi AI hoon. Main aapki kya madad kar sakta hoon?</div>
+        <div class="ai-msg">Namaste! Main BookGadi ka AI assistant hoon. Main booking, routes ya taxi services mein aapki kya madad kar sakta hoon?</div>
     </div>
 
     <div class="input-area">
-        <input type="text" id="userInput" placeholder="Kuch likhein...">
-        <button onclick="sendMessage()">Bhejein</button>
+        <input type="text" id="userInput" placeholder="Kuch poochiye..." autocomplete="off">
+        <button id="sendBtn" onclick="sendMessage()">Bhejein</button>
     </div>
-    <button onclick="clearKey()" style="font-size: 10px; background: none; color: gray; border: none; padding: 5px;">Reset API Key</button>
 </div>
 
 <script>
-    // Universal URL - jo models ko check karega
-    async function sendMessage() {
-        const inputEl = document.getElementById("userInput");
-        const chatDisplay = document.getElementById("chatDisplay");
-        const text = inputEl.value.trim();
+    const inputEl = document.getElementById("userInput");
+    const chatDisplay = document.getElementById("chatDisplay");
 
+    // "Enter" key se message bhejne ke liye
+    inputEl.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") sendMessage();
+    });
+
+    async function sendMessage() {
+        const text = inputEl.value.trim();
         if (!text) return;
 
-        // API Key check karein
+        // API Key management
         let apiKey = localStorage.getItem("bg_key");
         if (!apiKey) {
-            apiKey = prompt("Kripya apni Google AI Studio API Key yahan dalein:");
+            apiKey = prompt("Kripya apni Google AI Studio API Key enter karein (Ye sirf aapke browser mein save hogi):");
             if (apiKey) {
                 localStorage.setItem("bg_key", apiKey);
             } else {
+                alert("API Key ke bina chat kaam nahi karegi.");
                 return;
             }
         }
 
-        // Screen par user ka message dikhayein
+        // 1. User ka message screen par dikhayein
         chatDisplay.innerHTML += `<div class="user-msg">${text}</div>`;
         inputEl.value = "";
+        
+        // 2. Loading indicator dikhayein
+        const loadingId = "load-" + Date.now();
+        chatDisplay.innerHTML += `<div class="ai-msg typing" id="${loadingId}">BookGadi AI soch raha hai...</div>`;
         chatDisplay.scrollTop = chatDisplay.scrollHeight;
 
-        // API Call (Hum 'gemini-1.5-flash' aur 'v1beta' use kar rahe hain)
+        // 3. API Setup
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
         try {
@@ -91,27 +179,37 @@
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    contents: [{ parts: [{ text: "Tum Bookgadi website ke assistant ho. Hinglish mein jawab do. Sawal: " + text }] }]
+                    contents: [{ 
+                        parts: [{ 
+                            text: "You are the helpful AI assistant for BookGadi.com. Your tone is professional yet friendly. Answer in Hinglish. Website context: BookGadi provides taxi booking, outstation cabs, and car rentals. Question: " + text 
+                        }] 
+                    }]
                 })
             });
 
             const data = await response.json();
+            const loadingEl = document.getElementById(loadingId);
 
             if (data.error) {
-                chatDisplay.innerHTML += `<div class="ai-msg" style="color:red">Error: ${data.error.message}</div>`;
+                loadingEl.innerHTML = `<span style="color:red;">Error: ${data.error.message}</span>`;
             } else {
+                // 4. AI ka response dikhayein
                 const aiReply = data.candidates[0].content.parts[0].text;
-                chatDisplay.innerHTML += `<div class="ai-msg">${aiReply}</div>`;
+                loadingEl.classList.remove("typing");
+                loadingEl.innerText = aiReply;
             }
         } catch (err) {
-            chatDisplay.innerHTML += `<div class="ai-msg" style="color:red">Network Error!</div>`;
+            const loadingEl = document.getElementById(loadingId);
+            loadingEl.innerText = "Network Error! Kripya internet check karein.";
         }
+        
+        // Auto scroll to bottom
         chatDisplay.scrollTop = chatDisplay.scrollHeight;
     }
 
     function clearKey() {
         localStorage.removeItem("bg_key");
-        alert("API Key reset ho gayi hai.");
+        alert("API Key remove kar di gayi hai. Agli baar naya key dalna hoga.");
         location.reload();
     }
 </script>
