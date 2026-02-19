@@ -63,8 +63,8 @@
         const promptInfo = "Tum www.bookgadi.com ke assistant ho. Rates: Sedan ₹10/km, SUV ₹12/km. Jawab Hinglish mein do.";
 
         try {
-            // Hum 'v1' stable version use kar rahe hain jo 404 nahi dega
-            const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${SAVED_KEY}`;
+            // Is URL ko dhyan se copy karein (v1beta use karein)
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${SAVED_KEY}`;
             
             const response = await fetch(url, {
                 method: "POST",
