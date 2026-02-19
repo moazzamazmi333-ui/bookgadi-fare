@@ -2,70 +2,88 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <title>BookGadi AI Fix</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BookGadi AI Support</title>
     <style>
-        body { font-family: Arial; background: #f0f2f5; padding: 20px; display: flex; justify-content: center; }
-        .chat-wrap { width: 100%; max-width: 400px; background: #fff; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); height: 500px; display: flex; flex-direction: column; }
-        #display { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
-        .u { align-self: flex-end; background: #007bff; color: white; padding: 8px; border-radius: 8px; font-size: 14px; }
-        .a { align-self: flex-start; background: #e9e9eb; padding: 8px; border-radius: 8px; font-size: 14px; }
-        .input-bar { display: flex; padding: 10px; border-top: 1px solid #ddd; }
-        input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 5px; }
-        button { background: #007bff; color: #fff; border: none; padding: 8px 15px; cursor: pointer; border-radius: 5px; margin-left: 5px; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; }
+        .chat-card { width: 100%; max-width: 400px; background: white; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); height: 550px; display: flex; flex-direction: column; overflow: hidden; }
+        .header { background: #1a73e8; color: white; padding: 15px; text-align: center; font-weight: bold; font-size: 18px; }
+        #chatBox { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: #fafafa; }
+        .msg { padding: 10px 14px; border-radius: 12px; font-size: 14px; max-width: 80%; line-height: 1.4; }
+        .user { background: #1a73e8; color: white; align-self: flex-end; border-radius: 12px 12px 0 12px; }
+        .ai { background: #e9e9eb; color: #333; align-self: flex-start; border-radius: 12px 12px 12px 0; }
+        .input-area { padding: 15px; border-top: 1px solid #eee; display: flex; background: white; }
+        input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 25px; outline: none; }
+        button { background: #1a73e8; color: white; border: none; padding: 10px 20px; border-radius: 25px; margin-left: 8px; cursor: pointer; font-weight: bold; }
+        .error { color: #d93025; font-size: 12px; text-align: center; margin-top: 5px; }
     </style>
 </head>
 <body>
 
-<div class="chat-wrap">
-    <div id="display"></div>
-    <div class="input-bar">
-        <input type="text" id="msg" placeholder="Type here...">
-        <button onclick="send()">Send</button>
+<div class="chat-card">
+    <div class="header">🚖 BookGadi Assistant</div>
+    <div id="chatBox">
+        <div class="ai">Namaste! Main BookGadi AI hoon. Main aapki kya madad kar sakta hoon?</div>
+    </div>
+    <div class="input-area">
+        <input type="text" id="userInput" placeholder="Yahan apna sawal likhein..." onkeypress="if(event.key==='Enter') startChat()">
+        <button onclick="startChat()">Send</button>
     </div>
 </div>
 
 <script>
-    async function send() {
-        const input = document.getElementById("msg");
-        const display = document.getElementById("display");
-        const val = input.value.trim();
-        if (!val) return;
+    // ************************************************************
+    // APNI NAYI API KEY NICHE QUOTES KE ANDAR DALEIN
+    const MY_API_KEY = "AIzaSyA7JplhhVHvkZH3WWfjInKa_LUQW4PHsC0"; 
+    // ************************************************************
 
-        // Force a new key if it fails (Use the new one you just made)
-        let key = localStorage.getItem("bg_key_v4");
-        if (!key) {
-            key = prompt("Please enter your NEW API key:");
-            if (key) localStorage.setItem("bg_key_v4", key); else return;
+    async function startChat() {
+        const input = document.getElementById("userInput");
+        const box = document.getElementById("chatBox");
+        const text = input.value.trim();
+        
+        if (!text) return;
+        if (MY_API_KEY === "PASTE_YOUR_NEW_API_KEY_HERE") {
+            alert("Kripya pehle code mein apni API Key dalein!");
+            return;
         }
 
-        display.innerHTML += `<div class="u">${val}</div>`;
+        // Display user message
+        box.innerHTML += `<div class="msg user">${text}</div>`;
         input.value = "";
+        box.scrollTop = box.scrollHeight;
 
-        // Specifically using 'gemini-1.5-flash-8b' which is highly stable
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b:generateContent?key=${key}`;
+        // Show typing indicator
+        const tempId = "loading-" + Date.now();
+        box.innerHTML += `<div class="msg ai" id="${tempId}">...</div>`;
+
+        // FIXED URL: v1 version with gemini-1.5-flash
+        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${MY_API_KEY}`;
 
         try {
-            const res = await fetch(url, {
+            const response = await fetch(url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    contents: [{ parts: [{ text: "You are the assistant for BookGadi.com. Answer in Hinglish. User: " + val }] }]
+                    contents: [{ parts: [{ text: "You are the AI assistant for BookGadi.com. Answer in friendly Hinglish. Question: " + text }] }]
                 })
             });
 
-            const data = await res.json();
-            
-            if (data.error) {
-                display.innerHTML += `<div class="a" style="color:red;">API Error: ${data.error.message}</div>`;
-                // If it's a 404/Not Found, clear key to try again
-                if(data.error.code === 404) localStorage.removeItem("bg_key_v4");
+            const data = await response.json();
+            const aiMsgDiv = document.getElementById(tempId);
+
+            if (data.candidates && data.candidates[0].content) {
+                aiMsgDiv.innerText = data.candidates[0].content.parts[0].text;
+            } else if (data.error) {
+                aiMsgDiv.innerHTML = `<span class="error">Error: ${data.error.message}</span>`;
+                console.error("API Error:", data.error);
             } else {
-                display.innerHTML += `<div class="a">${data.candidates[0].content.parts[0].text}</div>`;
+                aiMsgDiv.innerText = "Maaf kijiye, main abhi jawab nahi de paa raha hoon.";
             }
         } catch (e) {
-            display.innerHTML += `<div class="a" style="color:red;">Network Error!</div>`;
+            document.getElementById(tempId).innerText = "Network Error! Connection check karein.";
         }
-        display.scrollTop = display.scrollHeight;
+        box.scrollTop = box.scrollHeight;
     }
 </script>
 
