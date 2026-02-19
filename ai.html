@@ -3,227 +3,110 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BookGadi - Live Taxi Tracking & Online Cab Booking</title>
-<meta name="description" content="BookGadi के साथ सुरक्षित और सस्ती टैक्सी बुक करें। लाइव कार ट्रैकिंग, पारदर्शी किराया (₹10/km) और 24/7 सर्विस।">
-<link rel="canonical" href="https://app.bookgadi.com/">
-
+<title>BookGadi - AI Powered Taxi</title>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
 <style>
-/* [SECTION: CSS STYLING] */
-:root { --primary: #1a73e8; --success: #25D366; --dark: #202124; --warning: #f4b400; }
+/* CSS Styling (Vahi purana wala) */
+:root { --primary: #1a73e8; --success: #25D366; --dark: #202124; }
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
 body { background: #f8f9fa; padding-bottom: 70px; }
 .card { width: 100%; max-width: 500px; background: #fff; border-radius: 0 0 24px 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); margin: auto; }
-.map-wrapper { position: relative; width: 100%; height: 400px; }
-#map { height: 100%; width: 100%; }
-.live-indicator { position: absolute; top: 12px; left: 12px; z-index: 10; background: white; padding: 6px 14px; border-radius: 20px; display: flex; align-items: center; border: 1px solid #eee; }
-.dot { height: 8px; width: 8px; background: #28a745; border-radius: 50%; margin-right: 8px; animation: pulse 1.5s infinite; }
-@keyframes pulse { 0% {transform: scale(0.9);} 70% {transform: scale(1.2);} 100% {transform: scale(0.9);} }
-.content { padding: 25px 20px; background: #ffffff; border-radius: 25px 25px 0 0; margin-top: -25px; position: relative; z-index: 5; }
-.input-box { width: 100%; padding: 14px; font-size: 15px; border-radius: 12px; border: 1.5px solid #eee; margin-bottom: 12px; outline: none; background: #fafafa; }
-.main-btn { width: 100%; padding: 16px; border-radius: 14px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; }
-.btn-calc { background: var(--dark); color: #fff; }
-.btn-wa { background: var(--success); color: #fff; margin-top: 12px; }
-.fare-card { padding: 18px; background: #f0f7ff; border-radius: 15px; border-left: 6px solid var(--primary); margin-top: 20px; }
-.bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; height: 65px; display: flex; justify-content: space-around; align-items: center; box-shadow: 0 -2 -10px rgba(0,0,0,0.1); z-index: 1000; }
-.nav-item { text-align: center; cursor: pointer; flex: 1; }
-/* AI Chat Styling */
-#aiWidget { background: #fff; border-radius: 15px; border: 1px solid #eee; margin-top: 20px; padding: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-#aiResponse { max-height: 150px; overflow-y: auto; font-size: 13px; background: #f9f9f9; padding: 10px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #eee; line-height: 1.4; }
+#map { height: 350px; width: 100%; }
+.content { padding: 20px; }
+.input-box { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; margin-bottom: 10px; }
+.main-btn { width: 100%; padding: 15px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; color: #fff; background: var(--dark); }
+#aiWidget { background: #fff; border: 1px solid #eee; border-radius: 15px; padding: 15px; margin-top: 20px; }
+#aiResponse { max-height: 150px; overflow-y: auto; font-size: 14px; background: #f9f9f9; padding: 10px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #eee; }
 </style>
 </head>
 <body>
 
 <div class="card">
-    <div class="map-wrapper" id="fullContainer">
-        <div class="live-indicator">
-            <span class="dot"></span>
-            <span id="carStatus" style="font-size:13px; font-weight:bold; color:#333;">Live: 0</span>
-        </div>
-        <div id="map"></div>
-    </div>
-
+    <div id="map"></div>
     <div class="content">
-        <input id="pickup" class="input-box" placeholder="Kahan se? (Pickup Location)">
-        <button onclick="useMyLocation()" style="width:100%; margin-bottom:10px; padding:10px; border-radius:10px; border:none; background:#eee; color:#1a73e8; font-weight:bold;">📍 Current Location</button>
-        <input id="drop" class="input-box" placeholder="Kahan tak? (Drop Location)">
-        
-        <select id="vehicle" class="input-box">
-            <option value="12">🚙 SUV (₹12/km)</option>
-            <option value="10">🚕 Sedan (₹10/km)</option>
-            <option value="7">💺 Airport Shared (₹7/km)</option>
-        </select>
-
-        <div class="trip-type" style="display:flex; gap:10px; margin-bottom:15px;">
-            <label style="flex:1; text-align:center; padding:10px; background:#f0f0f0; border-radius:10px;"><input type="radio" name="trip" id="oneway" checked> One Way</label>
-            <label style="flex:1; text-align:center; padding:10px; background:#f0f0f0; border-radius:10px;"><input type="radio" name="trip" id="roundtrip"> Round Trip</label>
-        </div>
-
-        <button class="main-btn btn-calc" onclick="calculateFare()">Kiraaya Dekhein</button>
+        <input id="pickup" class="input-box" placeholder="Pickup Location">
+        <input id="drop" class="input-box" placeholder="Drop Location">
+        <button class="main-btn" onclick="calculateFare()">Check Kiraaya</button>
         <div id="result"></div>
-        <button id="waBtn" class="main-btn btn-wa" onclick="openBooking()" style="display:none">💬 Booking Details Bharein</button>
 
         <div id="aiWidget">
-            <h3 style="font-size: 14px; margin-bottom: 8px;">🤖 Bookgadi AI Assistant</h3>
-            <div id="aiResponse">Hello! Azamgarh ya Lucknow ke liye kiraya puchiye.</div>
+            <h4 style="margin-bottom:10px;">🤖 BookGadi AI Help</h4>
+            <div id="aiResponse">Aap Azamgarh/Lucknow ka rate puch sakte hain...</div>
             <div style="display: flex; gap: 5px;">
-                <input id="aiInput" class="input-box" placeholder="Write message..." style="margin-bottom:0; flex:1;">
-                <button onclick="askBookgadiAI()" style="padding: 0 15px; border-radius: 12px; border: none; background: var(--primary); color: white;">Send</button>
+                <input id="aiInput" class="input-box" style="margin-bottom:0;" placeholder="Ask something...">
+                <button onclick="askBookgadiAI()" style="background:var(--primary); color:white; border:none; padding:0 15px; border-radius:10px;">Puchhein</button>
             </div>
-        </div>
-
-        <div id="userForm" style="display:none; margin-top:20px;">
-            <input id="custName" class="input-box" placeholder="Aapka Naam">
-            <input id="custPhone" class="input-box" type="tel" placeholder="Mobile Number">
-            <div style="display: flex; gap: 10px;">
-                <input id="rideDate" class="input-box" type="date" style="flex: 1;">
-                <input id="rideTime" class="input-box" type="time" style="flex: 1;">
-            </div>
-            <button class="main-btn btn-wa" onclick="sendWhatsApp()">Confirm & WhatsApp Book Karein</button>
         </div>
     </div>
-</div>
-
-<div class="bottom-nav">
-    <div class="nav-item" onclick="location.reload()"><div>🏠</div><span>Home</span></div>
-    <div class="nav-item" onclick="window.location.href='tel:9651191446'"><div>📞</div><span>Call</span></div>
-    <div class="nav-item" onclick="window.location.href='driver.html'"><div>👨‍✈️</div><span>Driver</span></div>
 </div>
 
 <script>
-/* [SECTION: FIREBASE & GEMINI CONFIG] */
-const firebaseConfig = { databaseURL: "https://bookgadi-97c98-default-rtdb.firebaseio.com", projectId: "bookgadi-97c98" };
+/* [SECTION: CONFIG] */
+const firebaseConfig = { databaseURL: "https://bookgadi-97c98-default-rtdb.firebaseio.com" };
 firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
 
-// [SECTION: UPDATED AI CONFIG]
-const GEMINI_API_KEY = "AIzaSyDHWLdtu1lkIq8RZjGbmfqJTqUPWMmLbK4"; 
+// AAPKI KEY YAHAN (Maps aur Gemini dono ke liye ek hi use kar rahe hain aap)
+const API_KEY = "AIzaSyDHWLdtu1lkIq8RZjGbmfqJTqUPWMmLbK4"; 
 
-// Ab ye URL 100% kaam karega
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-    
-/* [SECTION: MAPS & TRACKING LOGIC] */
-let map, directionsService, directionsRenderer, geocoder;
-const LKO = { lat: 26.8467, lng: 80.9462 };
-const AZM = { lat: 26.0739, lng: 83.1859 };
-
-function initMap(){
-    geocoder = new google.maps.Geocoder();
-    directionsService = new google.maps.DirectionsService();
-    directionsRenderer = new google.maps.DirectionsRenderer({ map: map });
-    map = new google.maps.Map(document.getElementById("map"),{ center: {lat: 26.5, lng: 82.1}, zoom: 8 });
-    directionsRenderer.setMap(map);
-    trackCars();
-}
-
-function trackCars() {
-    db.ref('live_cars').on('value', (snap) => {
-        let onlineCount = 0;
-        const cars = snap.val();
-        if(cars) onlineCount = Object.keys(cars).filter(id => cars[id].status === "online").length;
-        document.getElementById('carStatus').innerText = "Live: " + onlineCount;
-    });
-}
-
-function useMyLocation(){
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition((pos) => {
-            const latlng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-            geocoder.geocode({ location: latlng }, (results) => {
-                if (results[0]) document.getElementById("pickup").value = results[0].formatted_address;
-            });
-        });
-    }
-}
-
-/* [SECTION: FARE CALCULATION LOGIC] */
-function getDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
-}
-
-function calculateFare(){
-    const p = document.getElementById("pickup").value;
-    const d = document.getElementById("drop").value;
-    if(!p || !d) return alert("Please enter locations");
-
-    directionsService.route({ origin: p, destination: d, travelMode: 'DRIVING' }, (res, status) => {
-        if (status === 'OK') {
-            directionsRenderer.setDirections(res);
-            const km = res.routes[0].legs[0].distance.value / 1000;
-            const rate = Number(document.getElementById("vehicle").value);
-            const isRound = document.getElementById("roundtrip").checked;
-            let fare = isRound ? Math.round(km * rate * 2 + 300) : Math.round(250 + km * rate);
-            
-            document.getElementById("result").innerHTML = `
-                <div class="fare-card">
-                    <b>Distance:</b> ${km.toFixed(1)} km<br>
-                    <b>Est. Fare:</b> <span id="finalFare" style="color:var(--primary); font-size:22px;">₹${fare}</span>
-                </div>`;
-            document.getElementById("waBtn").style.display = "block";
-        }
-    });
-}
-
-/* [SECTION: FIXED GEMINI AI LOGIC] */
+/* [SECTION: SMART AI LOGIC] */
 async function askBookgadiAI() {
     const inputEl = document.getElementById("aiInput");
     const chatDisplay = document.getElementById("aiResponse");
     const userInput = inputEl.value.trim();
-
     if (!userInput) return;
 
     chatDisplay.innerHTML += `<div><b>Aap:</b> ${userInput}</div>`;
     inputEl.value = "";
 
-    try {
-        const response = await fetch(GEMINI_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: "Tum Bookgadi taxi ke assistant ho. User ka sawal: " + userInput }] }]
-            })
-        });
+    // Hum 3 alag-alag raste try karenge (Backup Strategy)
+    const urls = [
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`
+    ];
 
-        const data = await response.json();
+    let success = false;
 
-        // Agar abhi bhi error hai toh yahan details dikhengi
-        if (data.error) {
-            console.error("Google Error:", data.error.message);
-            chatDisplay.innerHTML += `<div style="color:red">Google Error: ${data.error.message}</div>`;
-            return;
+    for (let url of urls) {
+        if (success) break;
+        try {
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: "Tum Bookgadi taxi assistant ho. Answer in Hinglish. User asks: " + userInput }] }]
+                })
+            });
+
+            const data = await response.json();
+            
+            if (data.candidates && data.candidates[0].content.parts[0].text) {
+                const reply = data.candidates[0].content.parts[0].text;
+                chatDisplay.innerHTML += `<div style="color:var(--primary)"><b>AI:</b> ${reply}</div>`;
+                success = true;
+            }
+        } catch (err) {
+            console.log("This URL failed, trying next...");
         }
-
-        const reply = data.candidates[0].content.parts[0].text;
-        chatDisplay.innerHTML += `<div style="color:var(--primary)"><b>AI:</b> ${reply}</div>`;
-        chatDisplay.scrollTop = chatDisplay.scrollHeight;
-
-    } catch (err) {
-        console.error("Detailed Error:", err);
-        chatDisplay.innerHTML += `<div style="color:red">Connection Error! Network check karein.</div>`;
     }
+
+    if (!success) {
+        chatDisplay.innerHTML += `<div style="color:red">Google Error: API Key abhi bhi activate nahi hui hai. Google Console mein 'Generative Language API' Enable karein.</div>`;
+    }
+    chatDisplay.scrollTop = chatDisplay.scrollHeight;
 }
 
-/* [SECTION: WHATSAPP BOOKING] */
-function openBooking(){ document.getElementById("userForm").style.display = "block"; }
-
-function sendWhatsApp(){
-    const n = document.getElementById("custName").value;
-    const ph = document.getElementById("custPhone").value;
-    const p = document.getElementById("pickup").value;
-    const d = document.getElementById("drop").value;
-    const f = document.getElementById("finalFare") ? document.getElementById("finalFare").innerText : "";
-    
-    const msg = `*BookGadi Booking Request*\n\n👤 Name: ${n}\n📞 Phone: ${ph}\n💰 Fare: ${f}\n📍 Pickup: ${p}\n🏁 Drop: ${d}`;
-    window.open(`https://wa.me/919651191446?text=${encodeURIComponent(msg)}`, "_blank");
+/* [SECTION: MAPS LOGIC] */
+function initMap() {
+    const map = new google.maps.Map(document.getElementById("map"), {
+        center: { lat: 26.8467, lng: 80.9462 },
+        zoom: 7
+    });
 }
 </script>
 
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8fFUPeGfUy8Wwh-mQ_d3fbGZzKBy7VwM&libraries=places&callback=initMap" async defer></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDHWLdtu1lkIq8RZjGbmfqJTqUPWMmLbK4&libraries=places&callback=initMap" async defer></script>
 </body>
 </html>
