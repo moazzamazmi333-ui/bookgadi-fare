@@ -3,105 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BookGadi AI Assistant</title>
+    <title>BookGadi Fixed AI</title>
     <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 10px; display: flex; justify-content: center; height: 100vh; align-items: center; }
-        .chat-container { width: 100%; max-width: 400px; background: white; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.15); display: flex; flex-direction: column; height: 550px; overflow: hidden; }
-        .chat-header { background: #1a73e8; color: white; padding: 15px; text-align: center; font-weight: bold; position: relative; }
-        #chatDisplay { flex: 1; padding: 15px; overflow-y: auto; background: #ffffff; display: flex; flex-direction: column; gap: 10px; }
-        .user-msg { background: #d1e7ff; color: #000; padding: 10px; border-radius: 10px 10px 0 10px; align-self: flex-end; max-width: 80%; font-size: 14px; }
-        .ai-msg { background: #f1f0f0; color: #000; padding: 10px; border-radius: 10px 10px 10px 0; align-self: flex-start; max-width: 80%; font-size: 14px; line-height: 1.4; }
-        .input-area { border-top: 1px solid #ddd; padding: 10px; display: flex; gap: 8px; background: #fff; }
-        input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 20px; outline: none; }
-        button { background: #1a73e8; color: white; border: none; padding: 8px 18px; border-radius: 20px; cursor: pointer; font-weight: bold; }
-        .error-msg { color: #d93025; font-size: 12px; background: #fce8e6; padding: 8px; border-radius: 5px; }
+        body { font-family: sans-serif; background: #f4f4f4; display: flex; justify-content: center; padding: 20px; }
+        .chat-card { width: 100%; max-width: 400px; background: white; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); height: 500px; display: flex; flex-direction: column; }
+        .header { background: #1a73e8; color: white; padding: 15px; border-radius: 12px 12px 0 0; text-align: center; }
+        #chatContent { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .bubble { padding: 10px; border-radius: 10px; max-width: 80%; font-size: 14px; }
+        .user { background: #e3f2fd; align-self: flex-end; }
+        .ai { background: #f1f1f1; align-self: flex-start; }
+        .input-group { display: flex; padding: 10px; border-top: 1px solid #ddd; }
+        input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; outline: none; }
+        button { background: #1a73e8; color: white; border: none; padding: 10px 15px; margin-left: 5px; cursor: pointer; border-radius: 5px; }
     </style>
 </head>
 <body>
 
-<div class="chat-container">
-    <div class="chat-header">
-        🚖 BookGadi AI
-        <span onclick="resetKey()" style="font-size:10px; cursor:pointer; opacity:0.7; position:absolute; right:10px; top:18px;">Reset Key</span>
-    </div>
-    <div id="chatDisplay">
-        <div class="ai-msg">Namaste! Main BookGadi AI hoon. Main aapki kya madad kar sakta hoon?</div>
-    </div>
-    <div class="input-area">
-        <input type="text" id="userInput" placeholder="Sawal likhein..." onkeypress="handleEnter(event)">
-        <button onclick="sendMessage()">Bhejein</button>
+<div class="chat-card">
+    <div class="header">BookGadi AI Assistant</div>
+    <div id="chatContent"></div>
+    <div class="input-group">
+        <input type="text" id="userMsg" placeholder="Sawal likhein...">
+        <button onclick="startChat()">Bhejein</button>
     </div>
 </div>
 
 <script>
-    function handleEnter(e) { if (e.key === "Enter") sendMessage(); }
-
-    async function sendMessage() {
-        const inputEl = document.getElementById("userInput");
-        const chatDisplay = document.getElementById("chatDisplay");
-        const text = inputEl.value.trim();
+    async function startChat() {
+        const input = document.getElementById("userMsg");
+        const display = document.getElementById("chatContent");
+        const text = input.value.trim();
         if (!text) return;
 
-        let apiKey = localStorage.getItem("bg_key");
-        if (!apiKey) {
-            apiKey = prompt("AIzaSyAO4VOlOAWGtHjKkNUrMHvgtdldTnUqAbk");
-            if (apiKey) localStorage.setItem("bg_key", apiKey); else return;
+        // Reset local storage agar purani key blocked hai
+        let key = localStorage.getItem("bg_key_new");
+        if (!key) {
+            key = prompt("Nayi API Key (Step 1 wali) yahan dalein:");
+            if (key) localStorage.setItem("AIzaSyA7JplhhVHvkZH3WWfjInKa_LUQW4PHsC0", key);
+            else return;
         }
 
-        chatDisplay.innerHTML += `<div class="user-msg">${text}</div>`;
-        inputEl.value = "";
-        
-        const loadingDiv = document.createElement("div");
-        loadingDiv.className = "ai-msg";
-        loadingDiv.innerText = "Typing...";
-        chatDisplay.appendChild(loadingDiv);
-        chatDisplay.scrollTop = chatDisplay.scrollHeight;
+        display.innerHTML += `<div class="bubble user">${text}</div>`;
+        input.value = "";
 
-        // --- TRYING MULTIPLE MODEL NAMES FOR STABILITY ---
-        const modelsToTry = [
-            "gemini-1.5-flash-latest", // Modern Flash
-            "gemini-1.5-flash",        // Standard Alias
-            "gemini-pro"               // Reliable Fallback
-        ];
+        // Sabse stable endpoint aur model name
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
 
-        let success = false;
-        for (let modelName of modelsToTry) {
-            if (success) break;
+        try {
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: "You are BookGadi AI. Answer in Hinglish: " + text }] }]
+                })
+            });
+
+            const data = await response.json();
             
-            try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-                const response = await fetch(url, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: "You are the AI of BookGadi.com. Reply in Hinglish. User says: " + text }] }]
-                    })
-                });
-
-                const data = await response.json();
-
-                if (!data.error && data.candidates) {
-                    loadingDiv.innerText = data.candidates[0].content.parts[0].text;
-                    success = true;
-                } else {
-                    console.log(`Model ${modelName} failed, trying next...`);
-                }
-            } catch (err) {
-                console.error(`Error with ${modelName}:`, err);
+            if (data.error) {
+                display.innerHTML += `<div class="bubble ai" style="color:red;">Error: ${data.error.message}</div>`;
+            } else {
+                const aiResponse = data.candidates[0].content.parts[0].text;
+                display.innerHTML += `<div class="bubble ai">${aiResponse}</div>`;
             }
+        } catch (e) {
+            display.innerHTML += `<div class="bubble ai" style="color:red;">Network Error! Please check internet or key.</div>`;
         }
-
-        if (!success) {
-            loadingDiv.className = "error-msg";
-            loadingDiv.innerText = "Maaf kijiye, API connect nahi ho rahi. Kripya API Key check karein ya thodi der baad try karein.";
-        }
-        chatDisplay.scrollTop = chatDisplay.scrollHeight;
-    }
-
-    function resetKey() {
-        localStorage.removeItem("bg_key");
-        alert("API Key reset ho gayi.");
-        location.reload();
+        display.scrollTop = display.scrollHeight;
     }
 </script>
 
