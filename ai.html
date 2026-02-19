@@ -189,7 +189,10 @@ async function askBookgadiAI() {
         const reply = data.candidates[0].content.parts[0].text;
         chatDisplay.innerHTML += `<div style="color:var(--primary)"><b>AI:</b> ${reply}</div>`;
         chatDisplay.scrollTop = chatDisplay.scrollHeight;
-    } catch (err) { chatDisplay.innerHTML += `<div>Error! Check API Key.</div>`; }
+    } catch (err) { 
+        console.error("Network ya Coding Error:", err); 
+        chatDisplay.innerHTML += `<div style="color:red">Connection failed. Console dekhein.</div>`;
+    }
 }
 
 /* [SECTION: WHATSAPP BOOKING] */
