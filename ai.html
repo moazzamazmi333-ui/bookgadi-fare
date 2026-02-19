@@ -172,22 +172,27 @@ async function askGemini() {
     const text = input.value.trim();
     if(!text) return;
 
-    display.innerHTML += `<div style="background:var(--primary); color:white; padding:8px; border-radius:8px; align-self:flex-end;">${text}</div>`;
+    // UI par user ka message dikhayein
+    display.innerHTML += `<div style="background:var(--primary); color:white; padding:8px; border-radius:8px; align-self:flex-end; margin-bottom:5px;">${text}</div>`;
     input.value = "";
 
     const loadingId = "ai-" + Date.now();
     display.innerHTML += `<div id="${loadingId}" style="background:#eee; padding:8px; border-radius:8px; align-self:flex-start;">Thinking...</div>`;
     display.scrollTop = display.scrollHeight;
 
-    // Stable v1 API use karein
-    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+    // Gemini 2.5 ya 2.0 ke liye v1beta URL zaroori hai
+    // Note: Agar 2.5 "Not Found" bole toh yahan 1.5-flash ya 2.0-flash-exp likhein
+    const modelName = "gemini-1.5-flash"; 
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`;
 
     try {
         const response = await fetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                contents: [{ parts: [{ text: text }] }]
+                contents: [{
+                    parts: [{ text: "You are BookGadi Assistant. Answer in Hinglish: " + text }]
+                }]
             })
         });
 
@@ -197,12 +202,12 @@ async function askGemini() {
         if (data.candidates && data.candidates[0].content) {
             aiDiv.innerText = data.candidates[0].content.parts[0].text;
         } else if (data.error) {
-            // Agar abhi bhi error aaye toh yahan dikhega
+            // Agar model nahi mila toh yahan error message aayega
             aiDiv.innerText = "Error: " + data.error.message;
-            console.log("Full Error Data:", data);
+            console.log("Full Error:", data.error);
         }
     } catch (e) {
-        document.getElementById(loadingId).innerText = "Network Error!";
+        document.getElementById(loadingId).innerText = "Network Error! Connection check karein.";
     }
     display.scrollTop = display.scrollHeight;
 }
