@@ -164,6 +164,14 @@ async function askGemini() {
     display.innerHTML += `<div class="ai-msg" id="${loadId}">...</div>`;
     display.scrollTop = display.scrollHeight;
 
+    // --- YAHAN MASTER PROMPT ADD KIYA HAI ---
+    const masterPrompt = `Aap BookGadi Assistant ho. Sirf SHORT aur TO-THE-POINT jawab Hinglish mein do. 
+    Lamba bhashan mat do. Max 2-3 lines.
+    Rates: Sedan ₹10/km, SUV ₹12/km, Airport Shared ₹7/km.
+    Hamesha bolo: "Booking ke liye niche WhatsApp button dabayein ya 9651191446 par call karein."
+    User Question: ${text}`;
+    // ---------------------------------------
+
     // FIXED: Wahi URL aur Model jo aapne bataya ki chal raha hai
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
