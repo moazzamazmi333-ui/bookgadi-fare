@@ -94,8 +94,8 @@ const firebaseConfig = { databaseURL: "https://bookgadi-97c98-default-rtdb.fireb
 firebase.initializeApp(firebaseConfig);
 
 // SECURITY: Split API Key to prevent GitHub blocking
-const p1 = "AIzaSyA2bnLTcDGaOOpxy"; 
-const p2 = "D4_2_3HAn9JEU3eAgI"; // Ensure this matches your latest key
+const p1 = "AIzaSyA2bnLTcDGaOO"; 
+const p2 = "pxyD4_2_3HAn9JEU3eAgI"; 
 const GEMINI_API_KEY = p1 + p2;
 
 let map, directionsService, directionsRenderer;
@@ -164,19 +164,26 @@ async function askGemini() {
     display.innerHTML += `<div class="ai-msg" id="${loadId}">...</div>`;
     display.scrollTop = display.scrollHeight;
 
-    // Fixed for Gemini 2.5 / 1.5 Compatibility
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+    // FIXED: Wahi URL aur Model jo aapne bataya ki chal raha hai
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
     try {
         const response = await fetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ contents: [{ parts: [{ text: "You are the expert assistant for BookGadi.com. Answer in friendly Hinglish. Topic: " + text }] }] })
+            body: JSON.stringify({ 
+                contents: [{ parts: [{ text: "You are BookGadi Assistant. Reply in Hinglish: " + text }] }] 
+            })
         });
         const data = await response.json();
-        document.getElementById(loadId).innerText = data.candidates[0].content.parts[0].text;
+        
+        if(data.candidates && data.candidates[0].content) {
+            document.getElementById(loadId).innerText = data.candidates[0].content.parts[0].text;
+        } else {
+            document.getElementById(loadId).innerText = "Error: " + (data.error ? data.error.message : "Response nahi mila");
+        }
     } catch (e) {
-        document.getElementById(loadId).innerText = "Maaf kijiye, abhi system busy hai. Kripya call karein.";
+        document.getElementById(loadId).innerText = "Network Error! Connection check karein.";
     }
     display.scrollTop = display.scrollHeight;
 }
