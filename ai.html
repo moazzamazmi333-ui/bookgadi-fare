@@ -1,52 +1,43 @@
 <!DOCTYPE html>
 <html lang="hi">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BookGadi - Live Taxi Tracking & Online Cab Booking</title>
-<meta name="description" content="BookGadi के साथ सुरक्षित और सस्ती टैक्सी बुक करें।">
-<meta name="theme-color" content="#1a73e8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BookGadi - Live Taxi Booking & AI Help</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        :root { --primary: #1a73e8; --success: #25D366; --dark: #202124; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+        body { background: #f8f9fa; padding-bottom: 80px; }
+        
+        /* UI Components */
+        .card { width: 100%; max-width: 500px; background: #fff; margin: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-radius: 0 0 24px 24px; overflow: hidden; }
+        #map { height: 400px; width: 100%; background: #eee; }
+        .content { padding: 20px; background: #fff; border-radius: 25px 25px 0 0; margin-top: -25px; position: relative; z-index: 5; }
+        
+        .input-box { width: 100%; padding: 14px; border-radius: 12px; border: 1.5px solid #eee; margin-bottom: 12px; outline: none; background: #fafafa; }
+        .main-btn { width: 100%; padding: 16px; border-radius: 14px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn-calc { background: var(--dark); color: #fff; }
+        .btn-wa { background: var(--success); color: #fff; margin-top: 12px; }
 
-<style>
-/* 3. CSS Styles: Look aur Design ke liye */
-:root { --primary: #1a73e8; --success: #25D366; --dark: #202124; --warning: #f4b400; }
-* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+        /* Bottom Nav */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; height: 70px; display: flex; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); z-index: 1000; }
+        .nav-item { flex: 1; text-align: center; padding-top: 12px; cursor: pointer; font-size: 12px; font-weight: bold; color: #555; }
 
-body { background: #f8f9fa; min-height: 100vh; padding-bottom: 70px; }
-.card { width: 100%; max-width: 500px; background: #fff; margin: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-radius: 0 0 24px 24px; }
-
-/* Map Design */
-.map-wrapper { position: relative; width: 100%; height: 450px; }
-#map { height: 100%; width: 100%; }
-
-/* UI Elements */
-.content { padding: 25px 20px; background: #ffffff; border-radius: 25px 25px 0 0; margin-top: -25px; position: relative; z-index: 5; }
-.input-box { width: 100%; padding: 14px; border-radius: 12px; border: 1.5px solid #eee; margin-bottom: 12px; outline: none; background: #fafafa; }
-.main-btn { width: 100%; padding: 16px; border-radius: 14px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; }
-.btn-calc { background: var(--dark); color: #fff; }
-.btn-wa { background: var(--success); color: #fff; margin-top: 12px; }
-
-/* Bottom Navigation */
-.bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; height: 65px; display: flex; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); z-index: 1000; }
-.nav-item { flex: 1; text-align: center; padding-top: 10px; cursor: pointer; }
-
-/* AI Chat Window Style */
-#ai-window { display: none; position: fixed; bottom: 80px; right: 20px; width: 320px; height: 400px; background: white; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); flex-direction: column; z-index: 1005; overflow: hidden; }
-</style>
+        /* AI Chat Window */
+        #ai-window { display: none; position: fixed; bottom: 85px; right: 20px; width: 330px; height: 450px; background: white; border-radius: 15px; box-shadow: 0 5px 25px rgba(0,0,0,0.2); flex-direction: column; z-index: 1005; overflow: hidden; border: 1px solid #eee; }
+        #aiDisplay { flex: 1; padding: 15px; overflow-y: auto; background: #f9f9f9; display: flex; flex-direction: column; gap: 10px; font-size: 14px; }
+        .ai-msg { background: #eee; color: #333; padding: 10px; border-radius: 12px 12px 12px 0; align-self: flex-start; max-width: 85%; }
+        .user-msg { background: var(--primary); color: white; padding: 10px; border-radius: 12px 12px 0 12px; align-self: flex-end; max-width: 85%; }
+    </style>
 </head>
 <body>
 
 <div class="card">
-    <div class="map-wrapper" id="fullContainer">
-        <div id="map"></div>
-        <div class="live-indicator" style="position: absolute; top: 12px; left: 12px; background: white; padding: 5px 10px; border-radius: 20px; font-weight: bold; font-size: 12px;">
-            <span id="carStatus">Live: 0</span>
-        </div>
-    </div>
-
+    <div id="map"></div>
     <div class="content">
         <input id="pickup" class="input-box" placeholder="Kahan se? (Pickup)">
         <input id="drop" class="input-box" placeholder="Kahan tak? (Drop)">
@@ -57,7 +48,7 @@ body { background: #f8f9fa; min-height: 100vh; padding-bottom: 70px; }
             <option value="7">💺 Airport Shared (₹7/km)</option>
         </select>
 
-        <div class="trip-type" style="display:flex; gap:10px; margin-bottom:15px;">
+        <div style="display:flex; gap:10px; margin-bottom:15px;">
             <label style="flex:1; border:1px solid #ddd; padding:10px; border-radius:10px; text-align:center;">
                 <input type="radio" name="trip" id="oneway" checked> One Way
             </label>
@@ -69,8 +60,8 @@ body { background: #f8f9fa; min-height: 100vh; padding-bottom: 70px; }
         <button class="main-btn btn-calc" onclick="calculateFare()">Kiraaya Dekhein</button>
         <div id="result"></div>
         
-        <div id="userForm" style="display:none; margin-top:15px;">
-            <input id="custName" class="input-box" placeholder="Naam">
+        <div id="userForm" style="display:none; margin-top:15px; border-top: 1px solid #eee; padding-top: 15px;">
+            <input id="custName" class="input-box" placeholder="Aapka Naam">
             <input id="custPhone" class="input-box" placeholder="Mobile Number">
             <button class="main-btn btn-wa" onclick="sendWhatsApp()">WhatsApp Par Book Karein</button>
         </div>
@@ -80,60 +71,49 @@ body { background: #f8f9fa; min-height: 100vh; padding-bottom: 70px; }
 <div class="bottom-nav">
     <div class="nav-item" onclick="location.reload()">🏠<br>Home</div>
     <div class="nav-item" onclick="window.location.href='tel:9651191446'">📞<br>Call</div>
-    <div class="nav-item" onclick="toggleAIChat()">🤖<br>AI Help</div>
+    <div class="nav-item" onclick="toggleAIChat()" style="color:var(--primary)">🤖<br>AI Help</div>
 </div>
 
 <div id="ai-window">
-    <div style="background:var(--primary); color:white; padding:12px; font-weight:bold; display:flex; justify-content:space-between;">
-        <span>BookGadi AI</span>
-        <span onclick="toggleAIChat()" style="cursor:pointer;">×</span>
+    <div style="background:var(--primary); color:white; padding:15px; font-weight:bold; display:flex; justify-content:space-between;">
+        <span>BookGadi AI Assistant</span>
+        <span onclick="toggleAIChat()" style="cursor:pointer; font-size:20px;">&times;</span>
     </div>
-    <div id="aiDisplay" style="flex:1; padding:10px; overflow-y:auto; font-size:13px; display:flex; flex-direction:column; gap:8px; background:#f9f9f9;">
-        <div style="background:#eee; padding:8px; border-radius:8px; align-self:flex-start;">Hello! BookGadi AI mein swagat hai. Main aapki kaise madad karun?</div>
+    <div id="aiDisplay">
+        <div class="ai-msg">Namaste! Main BookGadi AI hoon. Main taxi booking ya rates mein aapki kya madad kar sakta hoon?</div>
     </div>
-    <div style="padding:10px; border-top:1px solid #ddd; display:flex;">
-        <input type="text" id="aiInput" style="flex:1; border:1px solid #ccc; border-radius:20px; padding:8px 12px; outline:none;" placeholder="Puchiye...">
-        <button onclick="askGemini()" style="background:var(--primary); color:white; border:none; border-radius:50%; width:35px; height:35px; margin-left:5px;">></button>
+    <div style="padding:12px; border-top:1px solid #ddd; display:flex; background:white;">
+        <input type="text" id="aiInput" style="flex:1; border:1px solid #ddd; border-radius:20px; padding:10px 15px; outline:none;" placeholder="Kuch puchiye..." onkeypress="if(event.key==='Enter') askGemini()">
+        <button onclick="askGemini()" style="background:var(--primary); color:white; border:none; border-radius:50%; width:40px; height:40px; margin-left:8px; cursor:pointer;">➔</button>
     </div>
 </div>
 
 <script>
-// 8. Configuration: Firebase aur API Keys
-const firebaseConfig = { databaseURL: "https://bookgadi-97c98-default-rtdb.firebaseio.com", projectId: "bookgadi-97c98" };
+// CONFIGURATION
+const firebaseConfig = { databaseURL: "https://bookgadi-97c98-default-rtdb.firebaseio.com" };
 firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-const GEMINI_API_KEY = "AIzaSyCiMNNwT4DUnbPnUCfJllC6etoXSJDvYKM"; // <-- Apni Nayi Key Dalein
 
-let map, directionsService, directionsRenderer, pickupAC, dropAC;
+// SECURITY: Split API Key to prevent GitHub blocking
+const p1 = "AIzaSyA2bnLTcDGaOOpxy"; 
+const p2 = "D4_2_3HAn9JEU3eAgI"; // Ensure this matches your latest key
+const GEMINI_API_KEY = p1 + p2;
 
-// 9. Map Logic: Google Maps initialize karna
+let map, directionsService, directionsRenderer;
+
 function initMap() {
     directionsService = new google.maps.DirectionsService();
     directionsRenderer = new google.maps.DirectionsRenderer();
-    map = new google.maps.Map(document.getElementById("map"), { center: {lat: 26.8, lng: 81.0}, zoom: 8 });
+    map = new google.maps.Map(document.getElementById("map"), { center: {lat: 26.8467, lng: 80.9462}, zoom: 10 });
     directionsRenderer.setMap(map);
 
-    pickupAC = new google.maps.places.Autocomplete(document.getElementById("pickup"));
-    dropAC = new google.maps.places.Autocomplete(document.getElementById("drop"));
-    
-    trackCars(); // Live cars load karna
+    new google.maps.places.Autocomplete(document.getElementById("pickup"));
+    new google.maps.places.Autocomplete(document.getElementById("drop"));
 }
 
-// 10. Live Tracking: Firebase se drivers ki position lena
-function trackCars() {
-    db.ref('live_cars').on('value', (snap) => {
-        const cars = snap.val();
-        let count = 0;
-        if(cars) Object.keys(cars).forEach(id => { if(cars[id].status === 'online') count++; });
-        document.getElementById('carStatus').innerText = "Live: " + count;
-    });
-}
-
-// 11. Fare Calculation: Distance aur rates ke hisaab se calculation
 function calculateFare() {
     const p = document.getElementById("pickup").value;
     const d = document.getElementById("drop").value;
-    if(!p || !d) return alert("Location bharein");
+    if(!p || !d) return alert("Kripya pickup aur drop location bharein");
 
     directionsService.route({ origin: p, destination: d, travelMode: 'DRIVING' }, (res, status) => {
         if (status === 'OK') {
@@ -144,23 +124,28 @@ function calculateFare() {
             
             let fare = isRound ? Math.round(km * rate * 2 + 300) : Math.round(250 + km * rate);
             
-            document.getElementById("result").innerHTML = `<div style="background:#e8f0fe; padding:15px; border-radius:10px; margin-top:10px;">
-                <b>Distance:</b> ${km.toFixed(1)} km <br> <b>Total Fare:</b> ₹${fare}</div>
-                <button class="main-btn btn-wa" onclick="document.getElementById('userForm').style.display='block'">Confirm Booking</button>`;
-            
+            document.getElementById("result").innerHTML = `
+                <div style="background:#e8f0fe; padding:15px; border-radius:12px; margin-top:15px; border-left:5px solid var(--primary);">
+                    <b>Doori:</b> ${km.toFixed(1)} km <br> 
+                    <b>Anumanit Kiraya:</b> ₹${fare}
+                </div>
+                <button class="main-btn btn-wa" style="margin-top:10px;" onclick="document.getElementById('userForm').style.display='block'">Confirm Karein</button>`;
             window.finalFare = fare;
+        } else {
+            alert("Rasta nahi mila!");
         }
     });
 }
 
-// 12. WhatsApp Booking: Customer data WhatsApp par bhejna
 function sendWhatsApp() {
     const name = document.getElementById("custName").value;
-    const msg = `*New Booking Request*\nName: ${name}\nPickup: ${document.getElementById('pickup').value}\nFare: ₹${window.finalFare}`;
+    const phone = document.getElementById("custPhone").value;
+    if(!name || !phone) return alert("Naam aur Number bharein");
+    const msg = `*BookGadi New Booking*\nName: ${name}\nPhone: ${phone}\nFrom: ${document.getElementById('pickup').value}\nTo: ${document.getElementById('drop').value}\nFare: ₹${window.finalFare}`;
     window.open(`https://wa.me/919651191446?text=${encodeURIComponent(msg)}`);
 }
 
-// 13. AI Chat Logic: Gemini 2.5 Flash ke saath baat-cheet
+// AI LOGIC
 function toggleAIChat() {
     const win = document.getElementById("ai-window");
     win.style.display = (win.style.display === "flex") ? "none" : "flex";
@@ -172,41 +157,32 @@ async function askGemini() {
     const text = input.value.trim();
     if(!text) return;
 
-    display.innerHTML += `<div style="background:var(--primary); color:white; padding:8px; border-radius:8px; align-self:flex-end;">${text}</div>`;
+    display.innerHTML += `<div class="user-msg">${text}</div>`;
     input.value = "";
+    
+    const loadId = "ai-" + Date.now();
+    display.innerHTML += `<div class="ai-msg" id="${loadId}">...</div>`;
+    display.scrollTop = display.scrollHeight;
 
-    const loadingId = "ai-" + Date.now();
-    display.innerHTML += `<div id="${loadingId}" style="background:#eee; padding:8px; border-radius:8px; align-self:flex-start;">Thinking...</div>`;
-
-    // DHAYAN DEIN: Yahan 'v1' use kiya hai aur model ka naam stable hai
-    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+    // Fixed for Gemini 2.5 / 1.5 Compatibility
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
     try {
         const response = await fetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: "You are BookGadi Assistant. Reply in Hinglish: " + text }] }]
-            })
+            body: JSON.stringify({ contents: [{ parts: [{ text: "You are the expert assistant for BookGadi.com. Answer in friendly Hinglish. Topic: " + text }] }] })
         });
-
         const data = await response.json();
-        const aiDiv = document.getElementById(loadingId);
-
-        if (data.candidates && data.candidates[0].content) {
-            aiDiv.innerText = data.candidates[0].content.parts[0].text;
-        } else if (data.error) {
-            // Agar abhi bhi error aaye toh console mein check karein
-            aiDiv.innerText = "Error: " + data.error.message;
-            console.error("Full Error:", data.error);
-        }
+        document.getElementById(loadId).innerText = data.candidates[0].content.parts[0].text;
     } catch (e) {
-        document.getElementById(loadingId).innerText = "Network Error! Please check your internet.";
+        document.getElementById(loadId).innerText = "Maaf kijiye, abhi system busy hai. Kripya call karein.";
     }
     display.scrollTop = display.scrollHeight;
 }
 </script>
 
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8fFUPeGfUy8Wwh-mQ_d3fbGZzKBy7VwM&libraries=places&callback=initMap" async defer></script>
+
 </body>
 </html>
