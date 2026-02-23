@@ -284,6 +284,8 @@ function trackCars() {
 
                     markers[id].addListener("click", () => {
                         const currentData = snap.val()[id]; 
+                      // ड्राइवर का नंबर (अगर डेटाबेस में phone फील्ड है तो उसे इस्तेमाल करें, नहीं तो डिफॉल्ट नंबर)
+    const driverPhone = currentData.phone || "9651191446";
                         infoWindow.setContent(`
                             <div style="padding:10px; line-height:1.5;">
                                 <strong style="color:#1a73e8;">BookGadi Live Partner</strong><br>
@@ -291,6 +293,19 @@ function trackCars() {
                                   <b>ID:</b> ${id}<br>
                                 <span style="color:green;">● Active Now</span>
                             </div>
+                            <a href="tel:${driverPhone}" style="
+                display: inline-block;
+                background-color: #2e7d32;
+                color: white;
+                padding: 8px 15px;
+                text-decoration: none;
+                border-radius: 5px;
+                font-weight: bold;
+                margin-top: 5px;
+                font-size: 13px;">
+                📞 Call Driver
+            </a>
+        </div>
                         `);
                         infoWindow.open(map, markers[id]);
                     });
