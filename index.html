@@ -164,71 +164,60 @@ let map, geocoder, pickupAC, dropAC, directionsRenderer, directionsService;
 let lastKm = 0;
 
 function initMap(){
-  document.getElementById('rideDate').valueAsDate = new Date();
+  // आज की डेट सेट करना
+  const dateInput = document.getElementById('rideDate');
+  if(dateInput) dateInput.valueAsDate = new Date();
+
   geocoder = new google.maps.Geocoder();
   directionsService = new google.maps.DirectionsService();
-  directionsRenderer = new google.maps.DirectionsRenderer({ polylineOptions: { strokeColor: "#1a73e8", strokeWeight: 5 } });
-  
-  // उत्तर प्रदेश (आज़मगढ़-लखनऊ बेल्ट) का एक बाउंड्री बॉक्स (सर्च का दायरा)
-  const upBounds = {
-    north: 28.0, // उत्तर
-    south: 24.0, // दक्षिण
-    east: 85.0,  // पूर्व (बिहार बॉर्डर तक)
-    west: 79.0   // पश्चिम
-  };
+  directionsRenderer = new google.maps.DirectionsRenderer({ 
+    polylineOptions: { strokeColor: "#1a73e8", strokeWeight: 5 } 
+  });
 
-  map = new google.maps.Map(document.getElementById("map"),{
-    center: {lat:26.8467, lng:80.9462}, // Lucknow default
-    zoom:10,
+  // मैप को आज़मगढ़ पर लोड करना ताकि पास के गाँव पहले दिखें
+  const azamgarh = { lat: 26.0667, lng: 83.1833 };
+  
+  map = new google.maps.Map(document.getElementById("map"), {
+    center: azamgarh, 
+    zoom: 10,
     zoomControl: true,
     fullscreenControl: true,
     streetViewControl: false,
     mapTypeControl: false
   });
-  directionsRenderer.setMap(map);
-
-  const options = {
-    componentRestrictions: { country: "in" },
-    bounds: upBounds, // अब यह Google को सिर्फ इस इलाके में नाम ढूंढने को कहेगा
-    fields: ["address_components", "geometry", "name"],
-    strictBounds: false // इसे false रखें ताकि अगर कोई दूर का सर्च करे तो मिल जाए, पर प्राथमिकता करीब को मिले
-  };
-
-  pickupAC = new google.maps.places.Autocomplete(document.getElementById("pickup"), options);
-  dropAC = new google.maps.places.Autocomplete(document.getElementById("drop"), options);
-}function initMap(){
-  document.getElementById('rideDate').valueAsDate = new Date();
-  geocoder = new google.maps.Geocoder();
-  directionsService = new google.maps.DirectionsService();
-  directionsRenderer = new google.maps.DirectionsRenderer({ polylineOptions: { strokeColor: "#1a73e8", strokeWeight: 5 } });
   
-  // उत्तर प्रदेश (आज़मगढ़-लखनऊ बेल्ट) का एक बाउंड्री बॉक्स (सर्च का दायरा)
-  const upBounds = {
-    north: 28.0, // उत्तर
-    south: 24.0, // दक्षिण
-    east: 85.0,  // पूर्व (बिहार बॉर्डर तक)
-    west: 79.0   // पश्चिम
-  };
-
-  map = new google.maps.Map(document.getElementById("map"),{
-    center: {lat:26.8467, lng:80.9462}, // Lucknow default
-    zoom:10,
-    zoomControl: true,
-    fullscreenControl: true,
-    streetViewControl: false,
-    mapTypeControl: false
-  });
   directionsRenderer.setMap(map);
 
+  // सर्च के लिए बाउंड्री (आज़मगढ़ और आसपास के जिलों के लिए)
+  const defaultBounds = new google.maps.LatLngBounds(
+    new google.maps.LatLng(25.0, 80.0), // दक्षिण-पश्चिम (South-West)
+    new google.maps.LatLng(28.0, 85.0)  // उत्तर-पूर्व (North-East)
+  );
+
   const options = {
+    bounds: defaultBounds,
     componentRestrictions: { country: "in" },
-    bounds: upBounds, // अब यह Google को सिर्फ इस इलाके में नाम ढूंढने को कहेगा
-    fields: ["address_components", "geometry", "name"],
-    strictBounds: false // इसे false रखें ताकि अगर कोई दूर का सर्च करे तो मिल जाए, पर प्राथमिकता करीब को मिले
+    fields: ["address_components", "geometry", "name", "formatted_address"],
+    strictBounds: false
   };
 
+  // ऑटो-कम्प्लीट शुरू करना
   pickupAC = new google.maps.places.Autocomplete(document.getElementById("pickup"), options);
   dropAC = new google.maps.places.Autocomplete(document.getElementById("drop"), options);
+
+  // मैप पर क्लिक करने से एड्रेस आ जाए (छोटे गाँवों के लिए सबसे बेस्ट)
+  map.addListener("click", (e) => {
+    geocoder.geocode({ location: e.latLng }, (results, status) => {
+      if (status === "OK" && results[0]) {
+        const pInput = document.getElementById("pickup");
+        if (!pInput.value) {
+          pInput.value = results[0].formatted_address;
+        } else {
+          document.getElementById("drop").value = results[0].formatted_address;
+        }
+      }
+    });
+  });
 }
 function useMyLocation(){
   const btn = document.getElementById("locBtn");
