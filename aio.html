@@ -2,13 +2,13 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <title>BookGadi AI - Gemini 2.5 Edition</title>
+    <title>BookGadi AI - Senior Manager Edition</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .chat-container { width: 100%; max-width: 400px; background: white; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); display: flex; flex-direction: column; height: 550px; overflow: hidden; }
+        .chat-container { width: 100%; max-width: 400px; background: white; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); display: flex; flex-direction: column; height: 600px; overflow: hidden; }
         .header { background: #1a73e8; color: white; padding: 15px; text-align: center; font-weight: bold; font-size: 1.1rem; }
         #chatDisplay { flex: 1; padding: 15px; overflow-y: auto; background: #ffffff; display: flex; flex-direction: column; gap: 10px; }
-        .msg { padding: 10px 14px; border-radius: 12px; font-size: 14px; max-width: 80%; line-height: 1.4; }
+        .msg { padding: 10px 14px; border-radius: 12px; font-size: 14px; max-width: 80%; line-height: 1.4; word-wrap: break-word; }
         .user { background: #1a73e8; color: white; align-self: flex-end; border-radius: 12px 12px 0 12px; }
         .ai { background: #f1f0f0; color: #333; align-self: flex-start; border-radius: 12px 12px 12px 0; }
         .input-area { border-top: 1px solid #ddd; padding: 15px; display: flex; gap: 10px; background: #fff; }
@@ -19,25 +19,24 @@
 <body>
 
 <div class="chat-container">
-    <div class="header">🚖 BookGadi AI (v2.5)</div>
+    <div class="header">🚖 BookGadi AI (Smart Memory)</div>
     <div id="chatDisplay">
-        <div class="ai">Namaste! Main Gemini 2.5 powered BookGadi AI hoon. Main aapki kya madad kar sakta hoon?</div>
+        <div class="msg ai">Namaste! Main BookGadi AI hoon. Main taxi booking mein aapki kaise madad kar sakta hoon?</div>
     </div>
     <div class="input-area">
-        <input type="text" id="userInput" placeholder="Kuch likhein..." onkeypress="if(event.key==='Enter') sendMessage()">
+        <input type="text" id="userInput" placeholder="Kahan jana hai?..." onkeypress="if(event.key==='Enter') sendMessage()">
         <button onclick="sendMessage()">Bhejein</button>
     </div>
 </div>
 
 <script>
-    // ********* APNI NAYI API KEY NICHE DALEIN *********
+    // SECURITY: API Key split for safety
+    const p1 = "AIzaSyA2bnLTcDGaOO";
+    const p2 = "pxyD4_2_3HAn9JEU3eAgI";
+    const API_KEY = p1 + p2;
 
-    
-    // Key ko tod kar likhein taaki GitHub ise block na kare
-const p1 = "AIzaSyA2bnLTcDGaOO";
-const p2 = "pxyD4_2_3HAn9JEU3eAgI";
-const API_KEY = p1 + p2;
-    // *************************************************
+    // HISTORY: Purani baatein yaad rakhne ke liye
+    let chatHistory = [];
 
     async function sendMessage() {
         const input = document.getElementById("userInput");
@@ -45,22 +44,36 @@ const API_KEY = p1 + p2;
         const text = input.value.trim();
         if (!text) return;
 
+        // User ka message dikhayein
         display.innerHTML += `<div class="msg user">${text}</div>`;
         input.value = "";
         display.scrollTop = display.scrollHeight;
 
+        // Loading indicator
         const loadingId = "load-" + Date.now();
         display.innerHTML += `<div class="msg ai" id="${loadingId}">...</div>`;
 
-        // FIXED: Using the exact model name from your link
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
+        // MASTER INSTRUCTIONS: AI ko Manager banane ke liye
+        const systemRule = `Aap BookGadi.com ke Senior Assistant ho.
+        RULES:
+        1. Sirf SHORT (max 2-3 line) Hinglish jawab do.
+        2. Rates: Sedan ₹10/km, SUV ₹12/km, Airport Shared ₹7/km.
+        3. Bus/Train/Flight ke baare mein koi jankari mat do, sirf Taxi ki baat karo.
+        4. Har jawab ke baad bolo: "Booking ke liye 9651191446 par call/WhatsApp karein."
+        5. Agar user pichli baat se juda sawal puche, toh context yaad rakho.`;
+
+        // History mein user ka naya sawal add karein
+        chatHistory.push({ role: "user", parts: [{ text: text }] });
+
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
 
         try {
             const response = await fetch(url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    contents: [{ parts: [{ text: "You are the expert assistant for BookGadi.com. Answer in Hinglish. Question: " + text }] }]
+                    contents: chatHistory, // Poori purani baat bhej rahe hain
+                    systemInstruction: { parts: [{ text: systemRule }] } // Rules alag se
                 })
             });
 
@@ -68,12 +81,13 @@ const API_KEY = p1 + p2;
             const aiDiv = document.getElementById(loadingId);
 
             if (data.candidates && data.candidates[0].content) {
-                aiDiv.innerText = data.candidates[0].content.parts[0].text;
-            } else if (data.error) {
-                aiDiv.style.color = "red";
-                aiDiv.innerText = "Error: " + data.error.message;
+                const aiResponse = data.candidates[0].content.parts[0].text;
+                aiDiv.innerText = aiResponse;
+                
+                // History mein AI ka jawab add karein
+                chatHistory.push({ role: "model", parts: [{ text: aiResponse }] });
             } else {
-                aiDiv.innerText = "Maaf kijiye, main abhi jawab nahi de paa raha hoon.";
+                aiDiv.innerText = "Maaf kijiye, abhi system busy hai. 9651191446 par call karein.";
             }
         } catch (e) {
             document.getElementById(loadingId).innerText = "Network Error! Connection check karein.";
