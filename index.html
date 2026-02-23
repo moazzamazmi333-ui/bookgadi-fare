@@ -169,8 +169,13 @@ function initMap(){
   directionsService = new google.maps.DirectionsService();
   directionsRenderer = new google.maps.DirectionsRenderer({ polylineOptions: { strokeColor: "#1a73e8", strokeWeight: 5 } });
   
-  // आज़मगढ़ का सेंटर पॉइंट ताकि गाँव जल्दी मिलें
-  const azamgarhCenter = { lat: 26.0667, lng: 83.1833 };
+  // उत्तर प्रदेश (आज़मगढ़-लखनऊ बेल्ट) का एक बाउंड्री बॉक्स (सर्च का दायरा)
+  const upBounds = {
+    north: 28.0, // उत्तर
+    south: 24.0, // दक्षिण
+    east: 85.0,  // पूर्व (बिहार बॉर्डर तक)
+    west: 79.0   // पश्चिम
+  };
 
   map = new google.maps.Map(document.getElementById("map"),{
     center: {lat:26.8467, lng:80.9462}, // Lucknow default
@@ -182,12 +187,11 @@ function initMap(){
   });
   directionsRenderer.setMap(map);
 
-  // Autocomplete Options: इसमें लोकेशन बायस जोड़ा गया है
   const options = {
     componentRestrictions: { country: "in" },
-    location: new google.maps.LatLng(azamgarhCenter.lat, azamgarhCenter.lng),
-    radius: 100000, // 100km का दायरा (आज़मगढ़, मऊ, जौनपुर, वाराणसी कवर होंगे)
-    strictBounds: false // इसे false रखने से बाकी जगहों के नाम भी आएँगे, पर लोकल नाम पहले दिखेंगे
+    bounds: upBounds, // अब यह Google को सिर्फ इस इलाके में नाम ढूंढने को कहेगा
+    fields: ["address_components", "geometry", "name"],
+    strictBounds: false // इसे false रखें ताकि अगर कोई दूर का सर्च करे तो मिल जाए, पर प्राथमिकता करीब को मिले
   };
 
   pickupAC = new google.maps.places.Autocomplete(document.getElementById("pickup"), options);
