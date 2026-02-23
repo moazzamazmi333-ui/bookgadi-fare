@@ -54,13 +54,14 @@
         display.innerHTML += `<div class="msg ai" id="${loadingId}">...</div>`;
 
         // MASTER INSTRUCTIONS: AI ko Manager banane ke liye
-        const systemRule = `
-STRICT RULES FOR BOOKGADI AI:
-1. Aap sirf ek Taxi Manager ho. Emojis aur faltu bhashan BAND karo.
-2. Jawab sirf 2 line mein hona chahiye. No 'Are Wah', No 'Nawabo ka shehar'.
-3. Sirf kaam ki baat: "Lucknow ke liye Sedan ₹10/km aur SUV ₹12/km hai. 9651191446 par call karein."
-4. Agar user destination bataye, toh turant Rate batao aur Call karne ko bolo.
-5. Books ya Library bus train ki baat mat karna, hum sirf Taxi GAADI book karte hain.`;
+        const systemRule = `Aap BookGadi.com ke Senior Assistant ho.
+        RULES:
+        1. Sirf SHORT (max 2-3 line) Hinglish jawab do.
+        2. Rates: Sedan ₹10/km, SUV ₹12/km, Airport Shared ₹7/km.
+        3. Bus/Train/Flight ke baare mein koi jankari mat do, sirf Taxi ki baat karo.
+        4. Har jawab ke baad bolo: "Booking ke liye 9651191446 par call/WhatsApp karein."
+        5. Agar user pichli baat se juda sawal puche, toh context yaad rakho.`;
+
         // History mein user ka naya sawal add karein
         chatHistory.push({ role: "user", parts: [{ text: text }] });
 
